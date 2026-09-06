@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+*.swp
+*.log
+# 密钥不进镜像（云托管通过服务环境变量注入）
+.env
+.env.*
+!.env.example
+!.env.production.example
+部署指南*.md
+README.md
+.env.platform.bak
