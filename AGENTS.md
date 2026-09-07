@@ -16,10 +16,9 @@
 6. [AI 指令助手链路](#6-ai-指令助手链路)
 7. [API 总览（tRPC 路由树）](#7-api-总览)
 8. [认证与会话](#8-认证与会话)
-9. [前端架构与设计系统](#9-前端架构与设计系统)
-10. [PWA 与手机端](#10-pwa-与手机端)
-11. [命令 / 部署 / 迁移 / 高频坑](#11-命令部署迁移高频坑)
-12. [已知规划与未实现](#12-已知规划与未实现)
+9. [前端架构与视觉约定](#9-前端架构与视觉约定)
+10. [命令 / 部署 / 迁移 / 高频坑](#10-命令部署迁移高频坑)
+11. [已知规划与未实现](#11-已知规划与未实现)
 
 ---
 
@@ -27,8 +26,8 @@
 
 1. **绝不把密钥写进任何会被 git 跟踪的文件**（代码 / README / 本文 / commit message）。
    部署所需变量（`APP_SECRET`、`DATABASE_URL`、管理员邮箱与初始密码、腾讯云 `SECRET_ID/SECRET_KEY`、`ENV_ID`）只存在于：仓库外的 `../cloudbase-setup/redeploy.mjs`（含硬编码值，勿复制进仓库）与运行时 pwsh 环境变量。跟新 Agent 交代部署时引用**变量名**即可，**不要复述具体值**。
-2. **数据库是 MySQL 5.7 兼容（腾讯云开发 TDSQL）**：8.0 语法 `DEFAULT (now())` 会直接报错，一律用 `DEFAULT CURRENT_TIMESTAMP`；`drizzle-kit push` 在此库不可靠，改 schema 走「generate → 手工修 SQL → apply」流程（§11.5）。
-3. **验证通过才算完成**：改任何 TS 先 `npm run check`（tsc -b）；改前端再 `npm run build`；涉及线上的改动按 §11.3 部署并**在线上真实 URL** 验证后 `git push`。
+2. **数据库是 MySQL 5.7 兼容（腾讯云开发 TDSQL）**：8.0 语法 `DEFAULT (now())` 会直接报错，一律用 `DEFAULT CURRENT_TIMESTAMP`；`drizzle-kit push` 在此库不可靠，改 schema 走「generate → 手工修 SQL → apply」流程（§10.5）。
+3. **验证通过才算完成**：改任何 TS 先 `npm run check`（tsc -b）；改前端再 `npm run build`；涉及线上的改动按 §10.3 部署并**在线上真实 URL** 验证后 `git push`。
 4. **CRM 写操作只有 `role="admin"` 能过**（`adminWrite` 中间件）。历史遗留 `role="user"` 账号会造成「看板点编辑没反应」这类静默失败——先查 `users.role`，别瞎改前端。密码账号 bootstrap 创建时已置 `role: "admin"`。
 5. **单租户产品，无多用户隔离**：数据全局共享，权限只区分「写（admin）/ 读（user）」。
 
@@ -66,7 +65,7 @@
 
 ## 3) 数据模型：表结构全集
 
-schema 唯一权威：`db/schema.ts`（Drizzle mysql-core）。Drizzle 关系在 `db/relations.ts`（少量，供 `db.query.*` 使用，见 `riskRouter` 的 deals 查询）。迁移历史 `db/migrations/*.sql`（已被 gitignore，线上靠 §11.5 手工 apply）。
+schema 唯一权威：`db/schema.ts`（Drizzle mysql-core）。Drizzle 关系在 `db/relations.ts`（少量，供 `db.query.*` 使用，见 `riskRouter` 的 deals 查询）。迁移历史 `db/migrations/*.sql`（已被 gitignore，线上靠 §10.5 手工 apply）。
 
 ### 3.0 表目录
 
@@ -175,7 +174,7 @@ schema 唯一权威：`db/schema.ts`（Drizzle mysql-core）。Drizzle 关系在
 | 列 | 说明 |
 |---|---|
 | id / name(255) | |
-| relationshipType | enum `client`/`consultant`/`partner`，默认 client（供应商、投资人走独立表，见 §5.2） |
+| relationshipType | enum `client`/`consultant`/`partner`，默认 client（供应商、投资人走独立表，见 §5.1） |
 | kind | enum `company/institute/lab/government/other`（公司/院所/实验室/政府） |
 | industry | varchar(64) 行业 |
 | stage | 一个**共享枚举**（13 值，三类关系阶段并在一列，语义由 `STAGE_FLOW` 界定），默认 prospect |
@@ -205,7 +204,7 @@ schema 唯一权威：`db/schema.ts`（Drizzle mysql-core）。Drizzle 关系在
 | id / accountId(必填) / title | |
 | stage | enum：`identify 识别 → tech_discussion 技术交流 → proposal_quote 方案与报价 → sample_poc 样品/POC → contract 商务与合同 → delivery 交付执行` 🟢；`won 验收回款` / `lost 输单(必填原因)` 🔴 |
 | amountCny | decimal(14,2) 项目金额（人民币，报价口径） |
-| probability | tinyint 0–100；**留空 = 按阶段默认概率**（见 §5.4 映射表） |
+| probability | tinyint 0–100；**留空 = 按阶段默认概率**（见 §5.3 映射表） |
 | expectedClose | varchar(10) 预计成交日 |
 | source | 来源 |
 | ownerId | int 默认 1（预留） |
@@ -425,7 +424,7 @@ crm
 
 ---
 
-## 9) 前端架构与设计系统
+## 9) 前端架构与视觉约定
 
 ### 9.1 路由与页面
 `src/App.tsx`：`/`=Home(看板)、`/crm`=CrmPage(Tab 容器)、`/login`、`/r/:token`(ReportPage 公开)、`*`=NotFound。全部包在 `TRPCProvider`（@tanstack/react-query + tRPC httpBatchLink，见 `providers/trpc.tsx`）。
@@ -448,36 +447,25 @@ crm
 
 ### 9.3 看板网格布局
 - 十二列 grid（`.dash-grid`），`useLayout` 把每卡 span 存 localStorage（`wtc-layout-v1`），拖动点阵把手改大小、双击复原；顺序固定 `CARD_ORDER`（dash/layout.ts）。
-- 窄屏自动切**堆叠单列**（`useStacked`：宽<1150 或高<730 → `.stacked`，卡全宽、隐藏把手、min-height 240）。手机上加新卡时别假设多列。
+- 窄视口自动切**堆叠单列**（`useStacked`：宽<1150 或高<730 → `.stacked`，卡全宽、隐藏把手、min-height 240）。做响应式/加新卡时别假设固定多列。
 
-### 9.4 设计系统（重要：不是默认 shadcn 白）
-- 主题：`html[data-theme=dark|light]` + shadcn `.dark`；`index.html` 内联脚本首屏前恢复，`hooks/useTheme.ts` 管切换（T 键）。主题存 `wtc-theme`。
-- 令牌（`src/index.css`）：
-  - `--n-*` = **语义层**（bg/card/border/text/dim/faint/accent…）。`--n-accent` 是**玫红语义色**（危险/逾期/错误/退出的红），**不要改成品牌色**，否则 CRM 逾期红线全变味；
-  - `--nx-*` = **霓虹品牌层**：`--nx-c1 青/--nx-c2 靛/--nx-c3 紫/--nx-c4 粉`，`--nx-grad` 渐变、`--nx-text-grad` 渐变字、`--nx-glow` 辉光。品牌主视觉一律用 `--nx-*`（header LOGO、CTA、底部 Dock、AI FAB）。
-- 关键 class：`.font-dot`（点阵字体 DotGothic16）、`.nlabel`（等宽小标签）、`.ncard`（玻璃卡+顶部霓虹发丝+hover 辉光，`.ncard::before` 是发丝勿删）、`.nbtn`（胶囊按钮，`:active` scale .96）、`.nbtn-accent`（=主行动渐变按钮）、`.nicon`、`.nx-brand`（渐变字，配 transparent color + background-clip:text）、`.nx-logo`（LOGO 呼吸辉光）、`.nx-page/.nx-tab-in`、`.nx-dock/.nx-dock-gap/.nx-install`（§10）。
-- 动效纪律：动画只改 `transform/opacity/filter`；背景光斑是 `body::before/::after`（fixed，`#root` z-index:1 保证内容在上）；已做全局 `prefers-reduced-motion` 兜底。新增动效别引入 layout 抖动/卡顿。
-- shadcn 组件在 `components/ui/*`（Radix + cva），Tailwind 主题色绑定上面的 CSS 变量；CRM 页正文用 shadcn 风格，看板用点阵/卡片风格，两者靠同一套 `--n-*` 变量统一观感。
+### 9.4 视觉与组件约定（改动样式前先读这里）
+- 主题：`html[data-theme=dark|light]` + shadcn `.dark`；`index.html` 内联脚本首屏前恢复，`hooks/useTheme.ts` 管切换（T 键），选择存 localStorage `wtc-theme`。**这是两套视觉基线，别只改一边。**
+- 令牌与公共样式集中在 `src/index.css`：变量与 class 请以文件内注释为纲（避免本文与代码漂移）：
+  - `--n-*` = 语义层（bg/card/border/text/dim/faint/accent…）；**`--n-accent` 是语义红（危险/逾期/错误/退出）**，不要改成品宣色；
+  - `--nx-*` = 品牌渐变层（青/靛/紫/粉四色与 `--nx-grad`/`--nx-text-grad` 等），品牌主视觉（LOG​​O、主行动按钮等）用它；
+  - 常用 class：`.font-dot`（点阵字体 DotGothic16）、`.nlabel`（等宽小标签）、`.ncard`（含 `.ncard::before` 顶部高光发丝，勿删）、`.nbtn`（胶囊按钮）、`.nbtn-accent`（主行动渐变按钮）、`.nicon`、`.nx-brand`（渐变字）、`.nx-logo` 等。
+- shadcn 组件在 `components/ui/*`（Radix + cva），Tailwind 主题色绑定上面的 CSS 变量；CRM 页正文偏 shadcn 风格，看板偏点阵/卡片风格，靠同一套变量统一观感。
+- 动效纪律：动画只改 `transform/opacity/filter`；页面级背景光斑用 fixed 伪元素（`body::before/::after`，`#root` z-index:1 保证内容在上）；已做 `prefers-reduced-motion` 全局兜底。新增动效别引入布局抖动/卡顿。
 
 ### 9.5 工具与钩子
-`hooks/useNow`(当前时间 tick)、`useStacked`、`useCountUp`、`useLayout`、`useTheme`、`useAuth`、`use-mobile`(≤768px)、`useMeasure`；日期工具 `lib/dates.ts`（mondayOf/addDays/dayFmt/weekNo…，与后端 helpers 语义一致）。
+`hooks/useNow`(当前时间 tick)、`useStacked`、`useCountUp`、`useLayout`、`useTheme`、`useAuth`、`useMeasure`；日期工具 `lib/dates.ts`（mondayOf/addDays/dayFmt/weekNo…，与后端 helpers 语义一致）。
 
 ---
 
-## 10) PWA 与手机端
+## 10) 命令 / 部署 / 迁移 / 高频坑
 
-- **安装载体**：`public/manifest.webmanifest`（standalone、dark theme、192/512 + maskable 图标）＋ `public/sw.js`（版本化缓存：导航网络优先→回退缓存首页；assets 缓存优先+后台刷新；`/api` 永不缓存）。
-- **图标**：纯 Node 零依赖脚本 `scripts/gen-icons.mjs` 绘制（深空渐变 + 3×3 点阵 W，青→紫→粉），产物 `public/icons/*`。要换图标改脚本重跑，**别手改 PNG**。
-- 改 manifest/sw 记得 bump `sw.js` 顶部 `VERSION`（否则旧缓存不失效）。
-- **移动端外壳**：`MobileDock`（底部玻璃 Dock：看板/CRM/置顶，≤760px 显示；Home/Crm 根部需留 `<div className="nx-dock-gap"/>` 占位）、`InstallPwa`（安装引导条：beforeinstallprompt 直唤系统安装，不支持则给菜单指引，记忆在 localStorage `wtc-install-closed`）。
-- AI FAB（`.nx-ai-fab`）手机端抬高到底部 Dock 之上（CSS media 已处理，别用内联 bottom 覆盖回去）。
-- 安装判定：https + manifest + sw + icons(≥192px maskable) 全齐即满足 Chrome 安装条件；`index.html` 同时带 apple-touch-icon / mobile-web-app-capable 等 iOS 元信息。
-
----
-
-## 11) 命令 / 部署 / 迁移 / 高频坑
-
-### 11.1 本地命令
+### 10.1 本地命令
 ```bash
 npm run dev            # http://localhost:3000（Hono dev-server + Vite）
 npm run check          # tsc -b 全量类型检查（改完必跑）
@@ -485,27 +473,26 @@ npm run build          # vite → dist/public；esbuild → dist/boot.js
 npm run db:generate    # 按 schema 生成迁移（生成后必须修 DEFAULT (now())）
 npm run lint / test
 npx tsx db/seed.ts     # 看板演示数据；db/seed-crm.ts = CRM 演示数据
-node scripts/gen-icons.mjs
 ```
 需要 Node ≥20。本地 DB 连不上时：dev 用 `.env`（DATABASE_URL 等，参考 `.env.example`）。
 
-### 11.2 本地冒烟（不改线上）
-`npm run build` 后以**项目目录为 cwd** 运行 `node dist/boot.js`（设 `NODE_ENV=production` + `APP_SECRET` + `DATABASE_URL`，可填假 DB 只看静态资源），再 curl `/`、`/manifest.webmanifest`（应 200 + `application/manifest+json`）、`/sw.js`、`/icons/*`。
+### 10.2 本地冒烟（不改线上）
+`npm run build` 后以**项目目录为 cwd** 运行 `node dist/boot.js`（设 `NODE_ENV=production` + `APP_SECRET` + `DATABASE_URL`，可填假 DB 只看静态资源），再 curl `/`（应回 index.html）与 `/api/trpc/ping`（应回 `{ok:true}`）。
 
-### 11.3 部署（CloudBase 云托管）
+### 10.3 部署（CloudBase 云托管）
 源码目录 = 本仓库；干净目录 `app-cloudbase-deploy`（与源码平级，排除 node_modules/dist/.git/.env*）。流程：
 1. `robocopy app-cloudbase app-cloudbase-deploy /E /XD node_modules dist .git /XF .env .env.production .env.local *.log`；
 2. 在 `../cloudbase-setup` 用 `redeploy.mjs`（manager-node SDK）部署：`$env:SECRET_ID / SECRET_KEY / ENV_ID` 三项给足后 `node redeploy.mjs`（内部 EnvParams 硬编码了 APP_SECRET/DATABASE_URL/管理员账号——**别把该文件弄进仓库**）；
-3. 到线上真实 URL（`https://<env>-<…>.sh.run.tcloudbase.com`）验证：首页含 `<link rel="manifest">`，manifest/sw/icons 全部 200 与正确 MIME；
+3. 到线上真实 URL（`https://<env>-<…>.sh.run.tcloudbase.com`）验证：根路径 HTTP 200、能登录、关键页面正常；
 4. `git add -A && git commit && git push`（约定：部署后自动推送，GitHub 与线上保持一致）。
 > CLI（`tcb`）已登录也能看环境，但 `tcb cloudrun deploy` 不传 EnvParams 有丢环境变量风险——与线上服务不一致前别用，默认走 redeploy.mjs。
 
-### 11.4 代码库纪律
+### 10.4 代码库纪律
 - 私有仓库 `Geighlord007/CEO_Workboard`，分支 main，工作副本就是本目录。
 - `gitignore` 已排除：`node_modules/ dist/ .env* db/migrations/*.sql dev-login.ts`。
 - **仓库外、勿纳入 git**：`../cloudbase-setup/`（部署/迁移脚本+硬编码密钥）、`../crm-prd/`（PRD 工作区；README/AGENTS 只引用其 `18-关系模型-v0.3.md`）。用户已明确「不用」把 crm-prd 加进仓库。
 
-### 11.5 数据库迁移（标准流程）
+### 10.5 数据库迁移（标准流程）
 1. 改 `db/schema.ts`；
 2. `npm run db:generate`（离线产出 `db/migrations/NNNN_*.sql` + snapshot）；
 3. 手工修 SQL：`DEFAULT (now())` → `DEFAULT CURRENT_TIMESTAMP`（5.7）；确认没有 8.0-only 语法；
@@ -513,25 +500,24 @@ node scripts/gen-icons.mjs
 5. apply 之前别让线上服务依赖新列；可用 `test-conn.mjs` 自检连接。
 > 迁移 SQL 已被 gitignore：它们属于「线上已应用」状态，改 schema 以 `schema.ts` 为真源。
 
-### 11.6 高频坑位
+### 10.6 高频坑位
 - 「编辑不生效」→ 先查 `users.role`（§0.4）；其次查请求是否被 adminWrite 403 静默吞掉。
-- `DEFAULT (now())` 报错 → 5.7 兼容问题（§0.2 / §11.5）。
+- `DEFAULT (now())` 报错 → 5.7 兼容问题（§0.2 / §10.5）。
 - mysql 驱动 `decimal` 返回字符串：比较/相加前 `Number()`；写库用 `String()`。
-- 服务器跑在容器里：别把 `node_modules/dist` 打进部署目录；`serveStatic` 的 root 是相对 **cwd** 的（本地冒烟必须 cd 到项目根，见 §11.2）。
+- 服务器跑在容器里：别把 `node_modules/dist` 打进部署目录；`serveStatic` 的 root 是相对 **cwd** 的（本地冒烟必须 cd 到项目根，见 §10.2）。
 - `tsc -b` 严格查未用变量/参数：改完别留孤儿 import/参数（曾有 `compact` 未用参数导致失败先例）。
-- 移动端：卡片自动堆叠（§9.3）；`--n-accent` 语义红不能变（§9.4）；改动效尊重 reduced-motion。
 - 时区：新增“日期”列一律 `varchar(10)` YYYY-MM-DD；只有“时刻/事件”才用 timestamp/分钟数。
+- 布局：卡片十二列网格与窄屏堆叠规则见 §9.3，别在窄屏下依赖固定列宽。
 
 ---
 
-## 12) 已知规划与未实现
+## 11) 已知规划与未实现
 
 按 PRD（`../crm-prd/00-工作日志与总览.md` D 系列决策）与需求单，仍未落地：
 - 关系行「✓签约 / ✕输单 / ○放弃」结果键 + 详情/编辑抽屉（统一关系明细）；
 - 外部数据导入（Excel / Airtable / Google Sheets 并行读）；
 - **双向同步**：accounts/suppliers/investors 的 `externalSource/externalId` 已埋点，待实现「外部为源、看板改动回写」（含冲突策略）；
-- 手机日历 ICS 订阅、系统日历同步；
-- CRM 供应商/客户「不同阶段」的可视化区分打磨（早期曾报 UI 不清晰，角色权限修复后疑似已解决，未复核）；
+- 供应商/客户「不同阶段」的可视化区分打磨（早期曾报 UI 不清晰，角色权限修复后疑似已解决，未复核）；
 - 安全收尾：轮换曾泄露的腾讯云 API 密钥、改初始密码（有凭据的一方处理）。
 
 _最后一条：不确定现状时先读代码/README/对应 router 再改，别猜；本文与代码冲突时以代码为准并回改本文。_
