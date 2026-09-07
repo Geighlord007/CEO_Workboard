@@ -24,10 +24,13 @@ export async function chatJson(params: {
     throw new LlmError("LLM 未配置（LLM_BASE_URL / LLM_API_KEY / LLM_MODEL）");
   }
   const url = `${llm.baseUrl.replace(/\/+$/, "")}/chat/completions`;
-  // temperature / response_format 通过 extra 注入：个别推理模型不支持时降级重试会一并去掉
+  // DeepSeek v4 系列是推理模型：思考会先吃掉大量输出 token，命令解析场景不需要思考，
+  // 显式传 thinking.disabled（不支持该参数的模型会 4xx，自动走下面的裸请求降级）。
+  const isDeepseekReasoner = /deepseek.*v4/i.test(llm.model);
+  // 输出预算拉大：兼容仍带推理的模型（思考 + 长上下文 + 最终 JSON）
   const baseBody: Record<string, unknown> = {
     model: llm.model,
-    max_tokens: 4096,
+    max_tokens: 8192,
     messages: [
       { role: "system", content: params.system },
       { role: "user", content: params.user },
@@ -66,6 +69,7 @@ export async function chatJson(params: {
     return await request({
       temperature: 0.1,
       response_format: { type: "json_object" },
+      ...(isDeepseekReasoner ? { thinking: { type: "disabled" } } : {}),
     });
   } catch (err) {
     if (err instanceof LlmError && err.status != null && err.status >= 400 && err.status < 500) {
