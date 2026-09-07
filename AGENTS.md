@@ -47,7 +47,7 @@
 | 登录 | `/login` | 邮箱 + 密码（Google 可选） |
 | 老板周报 | `/r/:token` | 公开只读聚合页，凭分享令牌 |
 
-核心设计命题：**看板卡片与 CRM 是同一份数据**（dashboard 上的客户推进卡直接推进 CRM 里的关系，不是只读副本）；**关系层与单据层分离**（商机 / 询价 / 样品各自走流程，只有关系本身进终态才归档）。
+核心设计命题：**看板卡片与 CRM 是同一份数据**（dashboard 的客户推进卡=该客户的商机、供应商推进卡=供应商合同级推进，改哪边数据都同步，不是只读副本）；**关系层与单据层分离**（商机 / 询价 / 样品各自走流程，只有关系本身进终态才归档）。
 
 ---
 
@@ -224,11 +224,13 @@ schema 唯一权威：`db/schema.ts`（Drizzle mysql-core）。Drizzle 关系在
 
 `opportunityId?` / `accountId?`（至少给一个）、`title`、`qtySpec`、`sentAt`、`tracking`、`status` enum `requested→sent→testing→passed/failed/retest`、`feedback`(text)、`followUpAt`、`createdAt`。
 
-### 3.16 suppliers（供应商）
+### 3.16 suppliers（供应商 = 合同级推进）
 
-`name`、`stage` enum `asked 询价中 / comparing 比价中 / approved 已准入` 🟢；`dropped 本轮弃用 / retired 淘汰停用` 🔴（默认 asked）、
+`name`、`stage` enum（合同级旅程）：🟢 `contacting 交流 → quoting 询价 → nda 保密协议 → contract 合同 → executing 执行中`；🔴 `completed 合同结束(✓) / terminated 终止·弃用(✕)`（默认 contacting）、
+`amountCny` decimal(14,2) 合同金额、`startDate/endDate`（varchar(10) 起止）、
 `category`（`gene_synthesis/primer/sequencing/reagent/consumable/equipment/cdmo/logistics/other` 等自由串）、
 `contactName/contactPhone/contactWechat`、`accountTerms`(账期)、`singleSource` bool(单一来源)、`risk` char `H/M/L`、`memo`、`externalSource/externalId`、时间戳。
+> 注：一行 = 一家供应商 + 其当前一笔合作的推进；NDA/合同等文档外链用 `docs`(subjectType=supplier) 挂。
 
 ### 3.17 investors（投资人/VC）
 
@@ -309,11 +311,14 @@ investors
 | client 客户 | prospect 潜在 → following 跟进中 → customer 已成交 | inactive 停用 / lost 输单 |
 | consultant 顾问 | identified 候选 → contacting 接触洽谈 → engaged 合作中 | ended 聘期结束 / dropped 未谈成 |
 | partner 合作方 | candidate 候选评估 → negotiating 洽谈方案 → active 合作中 | ended 合作结束 / failed 洽谈未成 |
-| supplier 供应商 | asked 询价中 → comparing 比价中 → approved 已准入 | dropped 本轮弃用 / retired 淘汰停用 |
+| supplier 供应商 | contacting 交流 → quoting 询价 → nda 保密协议 → contract 合同 → executing 执行中 | completed 合同结束 / terminated 终止·弃用 |
 | investor 投资人 | contacted 初步接触 → deck 材料已发 → pitched 路演 → dd 尽调 → ts 条款谈判 → closing 交割中 | funded 投资完成 / declined 婉拒 / withdrawn 放弃 |
 
 - **归档 = 阶段值本身**：无独立 isArchived 列。`relationship.setStage` 把关系置成任一终态阶段即归档；置回 🟢 阶段即恢复。「进行中 / 历史」只是前端按 `isArchivedStage` 过滤切换（RelationshipsPage）。
-- 看板「客户推进 / 供应商推进」卡（PipelineCard，`relType` client|supplier）与 CRM「关系」页共用 `crm.relationship.list/create/setStage`——**同一份数据**。改了阶段卡片和 CRM 同时变。
+- 看板「客户推进 / 供应商推进」卡（PipelineCard，`relType` client|supplier）与 CRM **同一份数据**，但两侧数据形态不同：
+  - 客户推进卡 = `crm.account.list`（仅 type=client）+ `crm.opportunity.list`，**每行一家客户、行内嵌其商机进度**，商机步进写 `crm.opportunity.update`；
+  - 供应商推进卡 = `crm.supplier.list`（供应商即合同级推进行），步进/✓✕/恢复写 `crm.relationship.setStage(type=supplier)`；
+  - CRM「关系」页统一列表仍读 `crm.relationship.list`（含 suppliers/investors，随上面同一行数据变化）。
 - 默认阶段：`relationship.create` 时 account 一律 `prospect`、supplier `asked`、investor `contacted`（注意：account 分支对 consultant/partner 也落 `prospect`，是现状，非各自流的首阶段——想改需要按 type 分发）。
 
 ### 5.2 单据层（挂在关系之下，各自走流程）
@@ -443,7 +448,7 @@ crm
 | OffworkCard 收工散点 | activity.range + setOffwork |
 | HeatmapCard 12周热力图 | task.counts{84d} + activity.range + setLevel |
 | RisksCard 风险阻塞 | risk.list/create/setResolved/remove |
-| PipelineCard 客户/供应商推进 | **crm.relationship.list/create/setStage**（按 relType 过滤） |
+| PipelineCard 客户/供应商推进 | 客户=`crm.account.list`+`crm.opportunity.list`+`crm.opportunity.update`；供应商=`crm.supplier.list`+`crm.relationship.setStage(type=supplier)` |
 | AiAssistant 悬浮 AI | ai.plan/execute |
 
 ### 9.3 看板网格布局
