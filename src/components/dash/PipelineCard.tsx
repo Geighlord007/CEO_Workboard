@@ -34,6 +34,9 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
       utils.crm.supplier.list.invalidate();
     },
   });
+  const createOpp = trpc.crm.opportunity.create.useMutation({
+    onSuccess: () => utils.crm.opportunity.list.invalidate(),
+  });
   const moveOpp = trpc.crm.opportunity.update.useMutation({
     onSuccess: () => utils.crm.opportunity.list.invalidate(),
   });
@@ -43,6 +46,10 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
   const supplierFlow = STAGE_FLOW.supplier;
   const supplierLabelOf = (k: string) =>
     (STAGE_LABELS.supplier as Record<string, string>)[k] ?? k;
+
+  const clientFlow = STAGE_FLOW.client;
+  const clientLabelOf = (k: string) =>
+    (STAGE_LABELS.client as Record<string, string>)[k] ?? k;
 
   const relLabel = relType === "client" ? "客户" : "供应商";
 
@@ -94,6 +101,29 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
     if (cur < 0) return;
     const next = supplierFlow.stages[cur + dir];
     if (next) setRelStage.mutate({ type: "supplier", id: s.id, stage: next });
+  };
+
+  /* 客户：没有商机时仍可推进“关系阶段”，并支持一键新建商机 */
+  const clientIdx = (stage: string) => clientFlow.stages.indexOf(stage);
+  const stepClient = (a: { id: number; stage: string }, dir: -1 | 1) => {
+    const ci = clientIdx(a.stage);
+    const next = clientFlow.stages[ci + dir];
+    if (next) setRelStage.mutate({ type: "client", id: a.id, stage: next });
+  };
+  const archiveClient = (a: { id: number }) => {
+    if (window.confirm("归档该客户（停用）？可在 CRM 关系列表恢复。")) {
+      setRelStage.mutate({ type: "client", id: a.id, stage: clientFlow.terminal[0] });
+    }
+  };
+  const newOpp = (a: { id: number; name: string }) => {
+    const title = window.prompt(`为「${a.name}」新建商机：标题`);
+    const t = (title ?? "").trim();
+    if (!t) return;
+    const amtStr = window.prompt("商机金额（元，可留空）", "");
+    const amtNum = Number(amtStr);
+    const amt =
+      amtStr && amtStr.trim() !== "" && !Number.isNaN(amtNum) && amtNum >= 0 ? amtNum : null;
+    createOpp.mutate({ accountId: a.id, title: t, amountCny: amt });
   };
 
   const submitCreate = () => {
@@ -159,19 +189,18 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
 
         {relType === "client" &&
           clientRows.map(({ acc, deals }) => {
-            const open = deals.filter(oppOpen);
             const won = deals.filter((o) => o.stage === "won").length;
             const lost = deals.filter((o) => o.stage === "lost").length;
             return (
               <div key={acc.id} style={{ padding: "3px 0", fontSize: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontWeight: 600, color: "var(--n-text)" }}>{acc.name}</span>
-                  {deals.length > 0 && (
-                    <span className="nlabel" style={{ color: "var(--n-faint)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {deals.length} 笔{won ? ` · ✓${won}` : ""}{lost ? ` · ✕${lost}` : ""}
-                    </span>
-                  )}
-                  {open.length === 0 && <span className="nlabel" style={{ color: "var(--n-faint)" }}>无进行中商机</span>}
+                  <span className="nlabel" style={{ color: "var(--n-faint)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {deals.length > 0
+                      ? `${deals.length} 笔${won ? ` · ✓${won}` : ""}${lost ? ` · ✕${lost}` : ""}`
+                      : "未建商机"}
+                  </span>
+                  <button className="nicon" title="为这家客户新建商机" onClick={() => newOpp(acc)}>＋商机</button>
                 </div>
                 {deals.map((o) => {
                   const idx = oppPos(o.stage);
@@ -210,6 +239,26 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
                     </div>
                   );
                 })}
+                {deals.length === 0 &&
+                  (() => {
+                    const ci = clientIdx(acc.stage);
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0 2px 12px" }}>
+                        <span className="nlabel" style={{ flex: "none", color: "var(--n-dim)" }}>关系</span>
+                        <span className="nlabel" style={{ flex: 1, color: "var(--n-text)" }}>
+                          {clientLabelOf(acc.stage)}
+                          {ci >= 0 ? ` ${ci + 1}/${clientFlow.stages.length}` : ""}
+                        </span>
+                        {ci > 0 && (
+                          <button className="nicon" title="回退上一步" onClick={() => stepClient(acc, -1)}>◀</button>
+                        )}
+                        {ci >= 0 && ci < clientFlow.stages.length - 1 && (
+                          <button className="nicon" title="推进到下一阶段" onClick={() => stepClient(acc, 1)}>▶</button>
+                        )}
+                        <button className="nicon" title="归档（停用）" onClick={() => archiveClient(acc)}>○</button>
+                      </div>
+                    );
+                  })()}
               </div>
             );
           })}
