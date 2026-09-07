@@ -15,6 +15,13 @@
       "when": 1788719945714,
       "tag": "0001_relationship-framework",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1788794278344,
+      "tag": "0002_square_puppet_master",
+      "breakpoints": true
     }
   ]
 }

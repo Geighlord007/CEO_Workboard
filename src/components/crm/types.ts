@@ -66,15 +66,20 @@ export type Sample = {
 export type Supplier = {
   id: number;
   name: string;
+  stage: string;
   category: string | null;
   contactName: string | null;
   contactPhone: string | null;
   contactWechat: string | null;
+  amountCny: string | null;
+  startDate: string | null;
+  endDate: string | null;
   accountTerms: string | null;
   singleSource: boolean;
   risk: "H" | "M" | "L" | null;
   memo: string | null;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Rfq = {

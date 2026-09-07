@@ -323,20 +323,32 @@ export const samples = mysqlTable("samples", {
 });
 export type Sample = typeof samples.$inferSelect;
 
-/** 供应商阶段（🔴 终态 = 自动归档） */
-export const SUPPLIER_STAGES = ["asked", "comparing", "approved", "dropped", "retired"] as const;
+/** 供应商阶段 = 合同级推进（单供应商当前一笔合作的旅程；🔴 终态 = 自动归档）
+ * 进行中：contacting 交流 → quoting 询价 → nda 保密协议 → contract 合同 → executing 执行中
+ * 终态：completed 合同结束(正常✓) / terminated 终止·弃用(提前结束) */
+export const SUPPLIER_STAGES = [
+  "contacting", "quoting", "nda", "contract", "executing",
+  "completed", "terminated",
+] as const;
 
-/** 供应商（独立于客户，采购侧；含服务商/检测/注册/实验/CDMO/设备仪器） */
+/** 供应商（独立于客户，采购侧；含服务商/检测/注册/实验/CDMO/设备仪器）
+ * 一条记录 = 一家供应商 + 其当前一笔合作的推进 */
 export const suppliers = mysqlTable("suppliers", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  /** asked 询价中 / comparing 比价中 / approved 已准入 / dropped 本轮弃用 / retired 淘汰停用 */
-  stage: mysqlEnum("stage", SUPPLIER_STAGES).notNull().default("asked"),
+  /** contacting 交流 / quoting 询价 / nda 保密协议 / contract 合同 / executing 执行中 / completed 合同结束 / terminated 终止·弃用 */
+  stage: mysqlEnum("stage", SUPPLIER_STAGES).notNull().default("contacting"),
   /** gene_synthesis/primer/sequencing/reagent/consumable/equipment/cdmo/logistics/other */
   category: varchar("category", { length: 32 }),
   contactName: varchar("contactName", { length: 120 }),
   contactPhone: varchar("contactPhone", { length: 60 }),
   contactWechat: varchar("contactWechat", { length: 120 }),
+  /** 合同/项目金额（人民币），推进卡与汇总用它 */
+  amountCny: decimal("amountCny", { precision: 14, scale: 2 }),
+  /** 合同/项目开始日期 */
+  startDate: varchar("startDate", { length: 10 }),
+  /** 预计/实际结束日期 */
+  endDate: varchar("endDate", { length: 10 }),
   accountTerms: varchar("accountTerms", { length: 120 }),
   singleSource: boolean("singleSource").notNull().default(false),
   risk: varchar("risk", { length: 1 }),

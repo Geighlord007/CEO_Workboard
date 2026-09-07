@@ -454,6 +454,9 @@ export const crmRouter = createRouter({
           contactName: z.string().max(120).nullish(),
           contactPhone: z.string().max(60).nullish(),
           contactWechat: z.string().max(120).nullish(),
+          amountCny: z.number().min(0).nullish(),
+          startDate: d.nullish(),
+          endDate: d.nullish(),
           accountTerms: z.string().max(120).nullish(),
           singleSource: z.boolean().default(false),
           risk: supplierRiskSchema.nullish(),
@@ -467,6 +470,9 @@ export const crmRouter = createRouter({
           contactName: input.contactName ?? null,
           contactPhone: input.contactPhone ?? null,
           contactWechat: input.contactWechat ?? null,
+          amountCny: input.amountCny != null ? String(input.amountCny) : null,
+          startDate: input.startDate ?? null,
+          endDate: input.endDate ?? null,
           accountTerms: input.accountTerms ?? null,
           singleSource: input.singleSource,
           risk: input.risk ?? null,
@@ -485,6 +491,10 @@ export const crmRouter = createRouter({
             contactName: z.string().max(120).nullish(),
             contactPhone: z.string().max(60).nullish(),
             contactWechat: z.string().max(120).nullish(),
+            stage: z.enum(SUPPLIER_STAGES).optional(),
+            amountCny: z.number().min(0).nullish(),
+            startDate: d.nullish(),
+            endDate: d.nullish(),
             accountTerms: z.string().max(120).nullish(),
             singleSource: z.boolean().nullish(),
             risk: supplierRiskSchema.nullish(),
@@ -500,6 +510,10 @@ export const crmRouter = createRouter({
         if (p.contactName !== undefined) set.contactName = p.contactName;
         if (p.contactPhone !== undefined) set.contactPhone = p.contactPhone;
         if (p.contactWechat !== undefined) set.contactWechat = p.contactWechat;
+        if (p.stage !== undefined) set.stage = p.stage;
+        if (p.amountCny !== undefined) set.amountCny = p.amountCny != null ? String(p.amountCny) : null;
+        if (p.startDate !== undefined) set.startDate = p.startDate;
+        if (p.endDate !== undefined) set.endDate = p.endDate;
         if (p.accountTerms !== undefined) set.accountTerms = p.accountTerms;
         if (p.singleSource !== undefined) set.singleSource = p.singleSource ?? false;
         if (p.risk !== undefined) set.risk = p.risk;
@@ -730,7 +744,7 @@ export const crmRouter = createRouter({
         if (input.type === "supplier") {
           await getDb()
             .insert(suppliers)
-            .values({ name: input.name, stage: (input.stage ?? "asked") as (typeof SUPPLIER_STAGES)[number] });
+            .values({ name: input.name, stage: (input.stage ?? "contacting") as (typeof SUPPLIER_STAGES)[number] });
         } else if (input.type === "investor") {
           await getDb()
             .insert(investors)

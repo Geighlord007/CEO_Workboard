@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/providers/trpc";
 import { todayStr } from "@/lib/dates";
+import { STAGE_FLOW, STAGE_LABELS } from "@contracts/crm";
 import {
   RFQ_STATUS,
   RFQ_STATUS_LABEL,
@@ -17,6 +18,32 @@ import {
 import type { Supplier, Rfq, QualityEvent, Doc } from "./types";
 
 const RISK_OPTIONS = ["H", "M", "L"] as const;
+
+/** 供应商推进的全部阶段顺序（🟢进行中 → 🔴终态） */
+const SUPPLIER_STAGE_KEYS = [
+  "contacting",
+  "quoting",
+  "nda",
+  "contract",
+  "executing",
+  "completed",
+  "terminated",
+] as const;
+type SupplierStageKey = (typeof SUPPLIER_STAGE_KEYS)[number];
+const SUPPLIER_ORDER: SupplierStageKey[] = [
+  ...(STAGE_FLOW.supplier.stages as SupplierStageKey[]),
+  ...(STAGE_FLOW.supplier.terminal as SupplierStageKey[]),
+];
+
+function supplierStageLabel(stage: string | null | undefined): string {
+  if (!stage) return "未开始";
+  return (STAGE_LABELS.supplier as Record<string, string>)[stage] ?? stage;
+}
+
+/** 简单校验 YYYY-MM-DD 或空串 */
+function validDay(v: string): string | null {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
 
 export function SuppliersPage({ isAdmin }: { isAdmin: boolean }) {
   const [subTab, setSubTab] = useState<"profile" | "rfq" | "quality">("profile");
@@ -70,6 +97,9 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
   const [singleSource, setSingleSource] = useState(false);
   const [risk, setRisk] = useState("");
   const [memo, setMemo] = useState("");
+  const [amountCny, setAmountCny] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const list = (suppliers ?? []) as Supplier[];
 
@@ -82,6 +112,9 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
       contactName: contactName || null,
       contactPhone: contactPhone || null,
       contactWechat: contactWechat || null,
+      amountCny: amountCny ? Number(amountCny) : null,
+      startDate: startDate || null,
+      endDate: endDate || null,
       accountTerms: accountTerms || null,
       singleSource,
       risk: (risk || null) as Supplier["risk"],
@@ -92,6 +125,9 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
     setContactName("");
     setContactPhone("");
     setContactWechat("");
+    setAmountCny("");
+    setStartDate("");
+    setEndDate("");
     setAccountTerms("");
     setSingleSource(false);
     setRisk("");
@@ -159,6 +195,35 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
               />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span className="nlabel">合同金额 ¥</span>
+              <input
+                className="ninput"
+                type="number"
+                min={0}
+                placeholder="合同/项目金额"
+                value={amountCny}
+                onChange={(e) => setAmountCny(e.target.value)}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span className="nlabel">开始日期</span>
+              <input
+                className="ninput"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span className="nlabel">预计结束日期</span>
+              <input
+                className="ninput"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span className="nlabel">账期</span>
               <input
                 className="ninput"
@@ -217,6 +282,7 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {list.map((s) => {
             const risk = s.risk;
+            const isTerm = STAGE_FLOW.supplier.terminal.includes(s.stage);
             return (
             <div key={s.id} className="ncard" style={{ padding: 0, overflow: "hidden" }}>
               <div
@@ -225,6 +291,17 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 13, color: "var(--n-text)", fontWeight: 600 }}>{s.name}</span>
+                  <span
+                    className="nlabel"
+                    style={{
+                      border: `1px solid ${isTerm ? "var(--n-accent)" : "var(--n-border)"}`,
+                      borderRadius: 999,
+                      padding: "1px 8px",
+                      color: isTerm ? "var(--n-accent)" : "var(--n-dim)",
+                    }}
+                  >
+                    {supplierStageLabel(s.stage)}
+                  </span>
                   <span className="nlabel" style={{ border: "1px solid var(--n-border)", borderRadius: 999, padding: "1px 8px" }}>
                     {supplierCategoryLabel(s.category)}
                   </span>
@@ -235,6 +312,11 @@ function SupplierProfileTab({ isAdmin }: { isAdmin: boolean }) {
                   )}
                 </span>
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {s.amountCny != null && (
+                    <span className="font-dot" style={{ fontSize: 12, color: "var(--n-text)" }}>
+                      {fmtMoney(Number(s.amountCny))}
+                    </span>
+                  )}
                   {s.singleSource && (
                     <span className="nlabel" style={{ color: "var(--n-accent)" }}>
                       ⚠ 单一来源
@@ -287,6 +369,10 @@ function SupplierDetail({
     contactName?: string | null;
     contactPhone?: string | null;
     contactWechat?: string | null;
+    stage?: SupplierStageKey;
+    amountCny?: number | null;
+    startDate?: string | null;
+    endDate?: string | null;
     accountTerms?: string | null;
     risk?: Supplier["risk"];
     memo?: string | null;
@@ -305,6 +391,19 @@ function SupplierDetail({
   const [docTitle, setDocTitle] = useState("");
   const [docUrl, setDocUrl] = useState("");
   const [docKind, setDocKind] = useState<typeof DOC_KIND[number]>("qualification");
+
+  const setAmount = () => {
+    const v = window.prompt("合同/项目金额（元，留空清除）", supplier.amountCny ?? "");
+    if (v === null) return;
+    const n = Number(v);
+    if (v.trim() !== "" && (Number.isNaN(n) || n < 0)) return;
+    onUpdate({ amountCny: v.trim() === "" ? null : n });
+  };
+  const setDay = (field: "startDate" | "endDate", label: string) => {
+    const v = window.prompt(`${label}（YYYY-MM-DD，留空清除）`, supplier[field] ?? "");
+    if (v === null) return;
+    onUpdate({ [field]: validDay(v.trim()) });
+  };
 
   const submitDoc = () => {
     const t = docTitle.trim();
@@ -339,6 +438,36 @@ function SupplierDetail({
         </div>
         <div>
           <span className="nlabel">微信</span> {supplier.contactWechat ?? "—"}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span className="nlabel">阶段</span>
+          {isAdmin ? (
+            <select
+              className="nselect"
+              value={supplier.stage}
+              onChange={(e) => onUpdate({ stage: e.target.value as SupplierStageKey })}
+              style={{ width: 120 }}
+              aria-label="推进阶段"
+            >
+              {SUPPLIER_ORDER.map((k) => (
+                <option key={k} value={k}>
+                  {supplierStageLabel(k)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span style={{ color: "var(--n-text)" }}>{supplierStageLabel(supplier.stage)}</span>
+          )}
+        </div>
+        <div>
+          <span className="nlabel">合同金额</span>{" "}
+          {supplier.amountCny != null ? fmtMoney(Number(supplier.amountCny)) : "—"}
+        </div>
+        <div>
+          <span className="nlabel">开始日期</span> {supplier.startDate ?? "—"}
+        </div>
+        <div>
+          <span className="nlabel">结束日期</span> {supplier.endDate ?? "—"}
         </div>
         <div>
           <span className="nlabel">账期</span> {supplier.accountTerms ?? "—"}
@@ -427,6 +556,15 @@ function SupplierDetail({
 
       {isAdmin && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="nbtn" onClick={setAmount}>
+            改金额
+          </button>
+          <button className="nbtn" onClick={() => setDay("startDate", "开始日期")}>
+            改开始
+          </button>
+          <button className="nbtn" onClick={() => setDay("endDate", "结束日期")}>
+            改结束
+          </button>
           <button
             className="nbtn"
             onClick={() => {

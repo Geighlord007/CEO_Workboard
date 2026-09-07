@@ -20,7 +20,10 @@ export const STAGE_FLOW: Record<RelationshipType, { stages: string[]; terminal: 
   client: { stages: ["prospect", "following", "customer"], terminal: ["inactive", "lost"] },
   consultant: { stages: ["identified", "contacting", "engaged"], terminal: ["ended", "dropped"] },
   partner: { stages: ["candidate", "negotiating", "active"], terminal: ["ended", "failed"] },
-  supplier: { stages: ["asked", "comparing", "approved"], terminal: ["dropped", "retired"] },
+  supplier: {
+    stages: ["contacting", "quoting", "nda", "contract", "executing"],
+    terminal: ["completed", "terminated"],
+  },
   investor: {
     stages: ["contacted", "deck", "pitched", "dd", "ts", "closing"],
     terminal: ["funded", "declined", "withdrawn"],
@@ -32,7 +35,10 @@ export const STAGE_LABELS: Record<RelationshipType, Record<string, string>> = {
   client: { prospect: "潜在", following: "跟进中", customer: "已成交", inactive: "停用", lost: "输单" },
   consultant: { identified: "候选", contacting: "接触洽谈", engaged: "合作中", ended: "聘期结束", dropped: "未谈成" },
   partner: { candidate: "候选评估", negotiating: "洽谈方案", active: "合作中", ended: "合作结束", failed: "洽谈未成" },
-  supplier: { asked: "询价中", comparing: "比价中", approved: "已准入", dropped: "本轮弃用", retired: "淘汰停用" },
+  supplier: {
+    contacting: "交流", quoting: "询价", nda: "保密协议", contract: "合同", executing: "执行中",
+    completed: "合同结束", terminated: "终止·弃用",
+  },
   investor: {
     contacted: "初步接触", deck: "材料已发", pitched: "路演", dd: "尽调", ts: "条款谈判", closing: "交割中",
     funded: "投资完成", declined: "婉拒", withdrawn: "放弃",
