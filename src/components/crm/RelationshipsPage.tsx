@@ -38,10 +38,18 @@ export function RelationshipsPage({ isAdmin }: { isAdmin: boolean }) {
     const next = flow.stages[flow.stages.indexOf(r.stage) + 1];
     if (next) setStage.mutate({ type: r.type, id: r.id, stage: next });
   };
+  const back = (r: Row) => {
+    const flow = STAGE_FLOW[r.type];
+    const idx = flow.stages.indexOf(r.stage);
+    if (idx > 0) setStage.mutate({ type: r.type, id: r.id, stage: flow.stages[idx - 1] });
+  };
   const archive = (r: Row) =>
     setStage.mutate({ type: r.type, id: r.id, stage: STAGE_FLOW[r.type].terminal[0] });
-  const restore = (r: Row) =>
-    setStage.mutate({ type: r.type, id: r.id, stage: STAGE_FLOW[r.type].stages[0] });
+  /** 恢复 = 回到最后一个进行中阶段（而不是从头开始） */
+  const restore = (r: Row) => {
+    const flow = STAGE_FLOW[r.type];
+    setStage.mutate({ type: r.type, id: r.id, stage: flow.stages[flow.stages.length - 1] });
+  };
 
   const submitCreate = () => {
     if (!newName.trim() || create.isPending) return;
@@ -151,6 +159,9 @@ export function RelationshipsPage({ isAdmin }: { isAdmin: boolean }) {
               </span>
               {isAdmin && (
                 <span style={{ flex: "none", display: "flex", gap: 4 }}>
+                  {!r.isArchived && idx > 0 && (
+                    <button className="nicon" title="回到上一阶段" onClick={() => back(r)}>◀</button>
+                  )}
                   {!r.isArchived && idx < total - 1 && (
                     <button className="nicon" title="推进到下一阶段" onClick={() => advance(r)}>▶</button>
                   )}

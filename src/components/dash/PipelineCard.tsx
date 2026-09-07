@@ -33,8 +33,14 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
     const next = flow.stages[idx + 1];
     if (next) setStage.mutate({ type: relType, id: c.id, stage: next });
   };
+  const back = (c: Row) => {
+    const idx = flow.stages.indexOf(c.stage);
+    if (idx > 0) setStage.mutate({ type: relType, id: c.id, stage: flow.stages[idx - 1] });
+  };
   const archive = (c: Row) => setStage.mutate({ type: relType, id: c.id, stage: flow.terminal[0] });
-  const restore = (c: Row) => setStage.mutate({ type: relType, id: c.id, stage: flow.stages[0] });
+  /** 恢复 = 回到最后一个进行中阶段（而不是从头开始） */
+  const restore = (c: Row) =>
+    setStage.mutate({ type: relType, id: c.id, stage: flow.stages[flow.stages.length - 1] });
 
   const submitCreate = () => {
     if (!newName.trim() || create.isPending) return;
@@ -80,16 +86,24 @@ export function PipelineCard({ relType }: { relType: "client" | "supplier" }) {
             — 暂无{meta.label} —
           </div>
         )}
-        {active.map((c) => (
+        {active.map((c) => {
+          const idx = flow.stages.indexOf(c.stage);
+          return (
           <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0", fontSize: 10 }}>
             <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={c.name}>
               {c.name}
             </span>
-            <span className="nlabel" style={{ flex: "none", fontSize: 9 }}>{label[c.stage]}</span>
-            <button className="nicon" title="推进到下一阶段" onClick={() => advance(c)}>▶</button>
+            <span className="nlabel" style={{ flex: "none", fontSize: 9, whiteSpace: "nowrap" }}>{label[c.stage]}{idx >= 0 ? ` ${idx + 1}/${flow.stages.length}` : ""}</span>
+            {idx > 0 && (
+              <button className="nicon" title="回到上一阶段" onClick={() => back(c)}>◀</button>
+            )}
+            {idx >= 0 && idx < flow.stages.length - 1 && (
+              <button className="nicon" title="推进到下一阶段" onClick={() => advance(c)}>▶</button>
+            )}
             <button className="nicon" title="归档（结束）" onClick={() => archive(c)}>○</button>
           </div>
-        ))}
+          );
+        })}
         {archived.slice(0, 3).map((c) => (
           <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0", fontSize: 10, opacity: 0.5 }}>
             <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "line-through" }}>
