@@ -2,8 +2,22 @@
 <html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
     <title>每周任务控制台 · WTC</title>
+    <meta name="description" content="每周任务 · 日程 · CRM 关系管理一体化工作台，可安装到手机桌面使用。" />
+    <!-- ===== PWA / 手机安装 ===== -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#07080f" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WTC" />
+    <meta name="format-detection" content="telephone=no" />
     <!-- 点阵大数字 + 等宽标签字体：改为 Fontsource 自托管（见 src/main.tsx），不依赖被墙的 Google Fonts -->
     <script>
       // 首屏前恢复主题，避免闪烁

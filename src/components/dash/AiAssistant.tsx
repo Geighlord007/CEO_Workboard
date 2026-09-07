@@ -57,7 +57,7 @@ export function AiAssistant() {
   return (
     <>
       <button
-        className="nbtn"
+        className="nbtn nx-ai-fab"
         onClick={() => (open ? close() : setOpen(true))}
         aria-label="AI 指令助手"
         title="AI 指令助手：一句话改看板"
@@ -73,11 +73,10 @@ export function AiAssistant() {
           fontSize: 15,
           fontWeight: 700,
           letterSpacing: "0.06em",
-          background: "var(--n-accent)",
+          background: "var(--nx-grad)",
           color: "#fff",
           border: "none",
           borderRadius: 999,
-          boxShadow: "0 8px 28px rgba(215,25,33,0.4)",
           cursor: "pointer",
         }}
       >

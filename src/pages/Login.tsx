@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { InstallPwa } from "@/components/InstallPwa";
 
 declare global {
   interface Window {
@@ -14,10 +15,28 @@ declare global {
   }
 }
 
+/** 3×3 点阵 LOGO（登录页放大版） */
+function DotLogo({ size = 26 }: { size?: number }) {
+  const on = [0, 1, 2, 4, 5, 6, 7, 8];
+  return (
+    <svg width={size} height={size} viewBox="0 0 3 3" aria-hidden>
+      {Array.from({ length: 9 }).map((_, i) => (
+        <rect
+          key={i}
+          x={i % 3}
+          y={Math.floor(i / 3)}
+          width={0.72}
+          height={0.72}
+          rx={0.12}
+          fill={on.includes(i) ? (i === 8 ? "var(--n-accent)" : "var(--n-text)") : "var(--n-lv1)"}
+        />
+      ))}
+    </svg>
+  );
+}
+
 /**
- * 登录页：支持两种方式——
- *  1. 邮箱 + 密码（国内生态主推，脱离 Google，无需任何第三方）
- *  2. Google（可选）：若后端配置了 GOOGLE_CLIENT_ID 则显示
+ * 登录页（霓虹版）：邮箱 + 密码主推；Google 可选（配置了才显示）
  */
 export default function Login() {
   const btnRef = useRef<HTMLDivElement>(null);
@@ -121,13 +140,27 @@ export default function Login() {
 
   const googleReady = !!clientId;
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 13px",
+    borderRadius: 11,
+    border: "1px solid var(--n-border)",
+    background: "color-mix(in srgb, var(--n-card2) 70%, transparent)",
+    color: "var(--n-text)",
+    fontSize: 13,
+    outline: "none",
+  };
+
   return (
     <div
       style={{
         minHeight: "100dvh",
-        display: "grid",
-        placeItems: "center",
-        background: "var(--n-bg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "max(20px, env(safe-area-inset-top, 0px)) 16px max(24px, env(safe-area-inset-bottom, 0px))",
+        boxSizing: "border-box",
       }}
     >
       {/* Google Identity Services 脚本（仅当使用 Google 登录时才加载） */}
@@ -136,41 +169,54 @@ export default function Login() {
       )}
       <div
         style={{
-          background: "var(--n-card)",
-          border: "1px solid var(--n-border)",
-          borderRadius: 12,
-          padding: "36px 40px",
-          minWidth: 320,
-          width: 340,
+          position: "relative",
+          background: "color-mix(in srgb, var(--n-card) 88%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--nx-c2) 45%, var(--n-border))",
+          borderRadius: 20,
+          padding: "clamp(26px, 6vw, 40px)",
+          width: "min(360px, calc(100vw - 36px))",
+          boxSizing: "border-box",
+          backdropFilter: "blur(18px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(18px) saturate(1.4)",
+          boxShadow:
+            "0 0 0 1px rgba(129,140,248,0.12), 0 30px 70px -28px rgba(76,90,255,0.5), 0 0 60px -24px rgba(34,211,238,0.35)",
+          overflow: "hidden",
         }}
       >
+        {/* 顶部霓虹发丝 */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 28,
+            right: 28,
+            height: 2,
+            background: "linear-gradient(90deg, transparent, #22d3ee, #818cf8, #e879f9, transparent)",
+            opacity: 0.9,
+          }}
+        />
         <div style={{ textAlign: "center" }}>
-          <div className="font-dot" style={{ fontSize: 22, color: "var(--n-text)" }}>
+          <span className="nx-logo">
+            <DotLogo size={30} />
+          </span>
+          <div className="font-dot nx-brand" style={{ fontSize: 28, marginTop: 10 }}>
             WTC
           </div>
-          <div className="nlabel" style={{ marginTop: 6, marginBottom: 20 }}>
+          <div className="nlabel" style={{ marginTop: 8, marginBottom: 22 }}>
             每周任务控制台
           </div>
         </div>
 
         {/* 邮箱 + 密码登录 */}
-        <form onSubmit={submitPassword} style={{ display: "grid", gap: 10 }}>
+        <form onSubmit={submitPassword} style={{ display: "grid", gap: 11 }}>
           <input
             type="email"
             autoComplete="email"
+            autoFocus
             placeholder="邮箱（需在白名单内）"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "1px solid var(--n-border)",
-              background: "var(--n-input, var(--n-card))",
-              color: "var(--n-text)",
-              fontSize: 13,
-            }}
+            style={inputStyle}
           />
           <input
             type="password"
@@ -178,31 +224,23 @@ export default function Login() {
             placeholder="密码"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: "1px solid var(--n-border)",
-              background: "var(--n-input, var(--n-card))",
-              color: "var(--n-text)",
-              fontSize: 13,
-            }}
+            style={inputStyle}
           />
           <button
             type="submit"
             disabled={submitting}
+            className="nbtn nbtn-accent"
             style={{
               width: "100%",
-              padding: "10px 0",
-              borderRadius: 8,
-              border: "none",
-              background: "var(--n-accent, #2563eb)",
-              color: "#fff",
+              boxSizing: "border-box",
+              padding: "12px 0",
+              borderRadius: 11,
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 700,
+              letterSpacing: "0.2em",
               cursor: submitting ? "not-allowed" : "pointer",
-              opacity: submitting ? 0.6 : 1,
+              opacity: submitting ? 0.7 : 1,
+              marginTop: 2,
             }}
           >
             {submitting ? "登录中…" : "登 录"}
@@ -254,7 +292,7 @@ export default function Login() {
         <div
           className="nlabel"
           style={{
-            marginTop: 20,
+            marginTop: 22,
             color: "var(--n-faint)",
             letterSpacing: "0.1em",
             textAlign: "center",
@@ -263,6 +301,9 @@ export default function Login() {
           INTERNAL TOOL · AUTHORIZED ONLY
         </div>
       </div>
+
+      {/* 手机：安装到桌面引导 */}
+      <InstallPwa />
     </div>
   );
 }

@@ -75,48 +75,67 @@
 }
 
 /* ============================================================================
- * Nothing OS 设计系统
- * 近黑/浅灰双主题，黑白灰层次，唯一强调色 Nothing 红
+ * WTC Mobile 设计系统 v2 · 深空霓虹
+ * 深蓝夜空底 + 青/靛/紫/粉四色霓虹渐变 + 玻璃卡片；
+ * 语义色（危险/逾期）仍为玫红 --n-accent，品牌主视觉用 --nx-* 渐变
  * ==========================================================================*/
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --n-bg: #0a0a0b;
-  --n-card: #131315;
-  --n-card2: #1a1a1d;
-  --n-border: #27272b;
-  --n-border-soft: #1e1e21;
-  --n-text: #f2f2ee;
-  --n-dim: #94948d;
-  --n-faint: #555550;
-  --n-accent: #d71921;
-  --n-accent-deep: #a81219;
-  --n-grid: #1c1c20;
-  --n-lv1: #343439;
-  --n-lv2: #7a7a72;
-  --n-lv3: #d71921;
+  --n-bg: #07080f;
+  --n-card: #0e1120;
+  --n-card2: #181c33;
+  --n-border: #272c4a;
+  --n-border-soft: #1b1f36;
+  --n-text: #eef1fb;
+  --n-dim: #99a1c6;
+  --n-faint: #58608a;
+  --n-accent: #f43f5e;
+  --n-accent-deep: #e11d48;
+  --n-grid: #20243f;
+  --n-lv1: #2d3257;
+  --n-lv2: #8b93cf;
+  --n-lv3: #f43f5e;
   --n-rowh: 84px;
+
+  /* 霓虹品牌色 */
+  --nx-c1: #22d3ee;
+  --nx-c2: #818cf8;
+  --nx-c3: #c084fc;
+  --nx-c4: #f472b6;
+  --nx-grad: linear-gradient(135deg, var(--nx-c1), var(--nx-c2) 45%, var(--nx-c3) 80%, var(--nx-c4));
+  --nx-text-grad: linear-gradient(92deg, #5eead4, #818cf8 45%, #e879f9 80%, #fb7185);
+  --nx-glow: rgba(129, 140, 248, 0.38);
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --n-bg: #efefeb;
-  --n-card: #fafaf7;
+  --n-bg: #e9ebf7;
+  --n-card: #f8f9fe;
   --n-card2: #ffffff;
-  --n-border: #d5d5ce;
-  --n-border-soft: #e3e3dc;
-  --n-text: #141416;
-  --n-dim: #5c5c56;
-  --n-faint: #aaaaa2;
-  --n-accent: #d71921;
-  --n-accent-deep: #b0141c;
-  --n-grid: #dcdcd4;
-  --n-lv1: #d2d2ca;
-  --n-lv2: #8a8a82;
-  --n-lv3: #d71921;
+  --n-border: #d3d7ec;
+  --n-border-soft: #e4e7f6;
+  --n-text: #151830;
+  --n-dim: #565d82;
+  --n-faint: #9aa0c2;
+  --n-accent: #e11d48;
+  --n-accent-deep: #be123c;
+  --n-grid: #d9dcf0;
+  --n-lv1: #c8cdea;
+  --n-lv2: #7c85c4;
+  --n-lv3: #e11d48;
+
+  --nx-c1: #0891b2;
+  --nx-c2: #6366f1;
+  --nx-c3: #a855f7;
+  --nx-c4: #ec4899;
+  --nx-grad: linear-gradient(135deg, var(--nx-c1), var(--nx-c2) 45%, var(--nx-c3) 80%, var(--nx-c4));
+  --nx-text-grad: linear-gradient(92deg, #0d9488, #4f46e5 45%, #c026d3 80%, #e11d48);
+  --nx-glow: rgba(99, 102, 241, 0.25);
 }
 
 html {
   background: var(--n-bg);
+  overflow-x: hidden;
 }
 body {
   background: var(--n-bg);
@@ -126,6 +145,7 @@ body {
     "Microsoft YaHei", monospace;
   font-size: 12px;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* 点阵大数字字体（中文回退系统黑体） */
@@ -428,4 +448,319 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001s !important;
   }
+}
+
+/* ============================================================================
+ * WTC Mobile · 深空霓虹层（动效 / 光晕 / 玻璃 / 移动端外壳）
+ * ==========================================================================*/
+
+/* ---------- 背景：内容层浮在固定霓虹底之上 ---------- */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* 极光光斑（缓慢漂移的两层，交错透明度） */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  background:
+    radial-gradient(38% 32% at 16% 8%, rgba(34, 211, 238, 0.17), transparent 72%),
+    radial-gradient(42% 36% at 88% 14%, rgba(192, 132, 252, 0.15), transparent 74%),
+    radial-gradient(46% 40% at 84% 90%, rgba(129, 140, 248, 0.2), transparent 74%),
+    radial-gradient(34% 30% at 6% 88%, rgba(244, 114, 182, 0.11), transparent 72%),
+    radial-gradient(30% 26% at 50% 42%, rgba(56, 189, 248, 0.05), transparent 70%);
+  animation: nx-aurora-a 26s ease-in-out infinite alternate;
+}
+body::after {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.07) 1px, transparent 1.6px);
+  background-size: 27px 27px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 20%, transparent 80%);
+  opacity: 0.7;
+  animation: nx-aurora-b 40s ease-in-out infinite alternate;
+}
+@keyframes nx-aurora-a {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+  50% { transform: translate3d(1.2%, 1.4%, 0) scale(1.06); }
+  to { transform: translate3d(-0.8%, 1.8%, 0) scale(1.03); }
+}
+@keyframes nx-aurora-b {
+  from { transform: translate3d(0, 0, 0); opacity: 0.45; }
+  to { transform: translate3d(1.6%, 2.4%, 0); opacity: 0.8; }
+}
+:root[data-theme="light"] body::before {
+  background:
+    radial-gradient(38% 32% at 16% 8%, rgba(14, 165, 233, 0.16), transparent 72%),
+    radial-gradient(42% 36% at 88% 14%, rgba(168, 85, 247, 0.12), transparent 74%),
+    radial-gradient(46% 40% at 84% 90%, rgba(99, 102, 241, 0.16), transparent 74%),
+    radial-gradient(34% 30% at 6% 88%, rgba(236, 72, 153, 0.1), transparent 72%);
+}
+:root[data-theme="light"] body::after {
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.35) 1px, transparent 1.6px);
+}
+
+/* ---------- 玻璃卡片 + 顶部霓虹发丝 + 悬停辉光 ---------- */
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  .ncard {
+    background: color-mix(in srgb, var(--n-card) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.35);
+    backdrop-filter: blur(14px) saturate(1.35);
+  }
+}
+.ncard {
+  box-shadow: 0 14px 34px -20px rgba(2, 4, 18, 0.7);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+.ncard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--nx-c1) 22%, var(--nx-c2) 50%, var(--nx-c3) 78%, transparent);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.ncard:hover {
+  border-color: color-mix(in srgb, var(--nx-c2) 55%, var(--n-border));
+  box-shadow:
+    0 0 0 1px rgba(129, 140, 248, 0.14),
+    0 22px 50px -22px rgba(76, 90, 255, 0.4),
+    0 0 26px -12px rgba(34, 211, 238, 0.3);
+}
+.ncard:hover::before {
+  opacity: 1;
+}
+
+/* ---------- 霓虹渐变品牌字（WTC 标题） ---------- */
+.nx-brand {
+  background: var(--nx-text-grad) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.45));
+}
+/* LOGO 呼吸辉光 */
+.nx-logo {
+  display: inline-flex;
+  align-items: center;
+}
+.nx-logo svg {
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.85));
+  animation: nx-breathe 3.2s ease-in-out infinite;
+}
+@keyframes nx-breathe {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.6)); }
+  50% { filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.95)); }
+}
+
+/* ---------- 按钮升级：主行动渐变 / 按压反馈 ---------- */
+.nbtn {
+  transition: all 0.18s ease;
+}
+.nbtn:active {
+  transform: scale(0.96);
+}
+.nbtn:hover {
+  border-color: color-mix(in srgb, var(--nx-c1) 60%, var(--n-border));
+  box-shadow: 0 0 14px -6px rgba(34, 211, 238, 0.65);
+}
+/* .nbtn-accent = 主行动按钮：霓虹渐变 */
+.nbtn-accent {
+  background: var(--nx-grad) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  text-shadow: 0 1px 10px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 8px 22px -8px var(--nx-glow);
+}
+.nbtn-accent:hover {
+  background: linear-gradient(135deg, #3ae3ff, #8b96ff 45%, #d397ff 80%, #fb7fc6) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 10px 30px -8px var(--nx-glow), 0 0 18px -6px rgba(129, 140, 248, 0.8);
+}
+.nbtn-accent:active {
+  transform: scale(0.95);
+}
+.nicon:hover {
+  box-shadow: 0 0 10px -4px var(--nx-c1);
+}
+
+/* ---------- AI 悬浮按钮：霓虹化 + 手机上移到 Dock 之上 ---------- */
+.nx-ai-fab {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1 55%, #a855f7) !important;
+  box-shadow:
+    0 10px 30px -8px rgba(99, 102, 241, 0.65),
+    0 0 22px -6px rgba(34, 211, 238, 0.5) !important;
+  transition: transform 0.2s ease, box-shadow 0.25s ease;
+}
+.nx-ai-fab:hover {
+  transform: translateY(-2px);
+}
+.nx-ai-fab:active {
+  transform: scale(0.94);
+}
+
+/* ---------- 底部应用 Dock（仅手机，App 感导航） ---------- */
+.nx-dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 45;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 8px;
+  border-radius: 24px;
+  border: 1px solid var(--n-border);
+  background: color-mix(in srgb, var(--n-card) 78%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow:
+    0 16px 40px -14px rgba(2, 4, 18, 0.8),
+    0 0 0 1px rgba(129, 140, 248, 0.1) inset;
+  animation: nx-dock-in 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes nx-dock-in {
+  from { opacity: 0; transform: translate(-50%, 24px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.nx-dock .nx-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  height: 50px;
+  border: none;
+  background: transparent;
+  color: var(--n-dim);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.nx-dock .nx-item:active {
+  transform: scale(0.9);
+}
+.nx-dock .nx-item .nx-item-ico {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  transition: all 0.2s ease;
+}
+.nx-dock .nx-item .nx-item-lbl {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+.nx-dock .nx-item.is-active {
+  color: var(--n-text);
+}
+.nx-dock .nx-item.is-active .nx-item-ico {
+  background: linear-gradient(135deg, var(--nx-c1), var(--nx-c2));
+  color: #fff;
+  box-shadow: 0 6px 16px -6px var(--nx-glow), 0 0 14px -4px rgba(34, 211, 238, 0.8);
+}
+.nx-dock .nx-item:not(.is-active):hover .nx-item-ico {
+  background: color-mix(in srgb, var(--nx-c2) 18%, transparent);
+}
+/* Dock 占位：避免内容被遮挡 */
+.nx-dock-gap {
+  height: 0;
+}
+.nx-ai-fab {
+  /* 移动端抬高，避免与 Dock 重叠 */
+}
+@media (max-width: 760px) {
+  .nx-dock {
+    display: flex;
+  }
+  .nx-dock-gap {
+    height: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .nx-ai-fab {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  /* 手机上卡片更圆、更松 */
+  .ncard {
+    border-radius: 16px;
+  }
+  .dash-grid {
+    gap: 10px;
+  }
+  body {
+    font-size: 12.5px;
+  }
+}
+
+/* ---------- 安装引导横幅（仅手机，顶部胶囊） ---------- */
+.nx-install {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  width: min(calc(100vw - 28px), 420px);
+  padding: 10px 8px 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--nx-c2) 55%, var(--n-border));
+  background: color-mix(in srgb, var(--n-card) 92%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 44px -16px rgba(2, 4, 18, 0.75), 0 0 20px -10px var(--nx-glow);
+  animation: nx-drop 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+@keyframes nx-drop {
+  from { opacity: 0; transform: translate(-50%, -18px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.nx-install .nx-install-txt {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--n-text);
+  line-height: 1.5;
+}
+.nx-install .nx-install-txt b {
+  background: var(--nx-text-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (max-width: 760px) {
+  .nx-install {
+    display: flex;
+  }
+}
+
+/* ---------- CRM Tab 切换的入场动效 ---------- */
+.nx-tab-in {
+  animation: n-pop 0.42s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+/* 顶栏 WTC·CRM 渐变点 */
+.nx-dot-accent {
+  filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.8));
 }

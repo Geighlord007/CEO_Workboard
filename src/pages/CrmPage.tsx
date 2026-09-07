@@ -10,6 +10,8 @@ import { SamplesPage } from "@/components/crm/SamplesPage";
 import { SuppliersPage } from "@/components/crm/SuppliersPage";
 import { RelationshipsPage } from "@/components/crm/RelationshipsPage";
 import { CrmAiBar } from "@/components/crm/CrmAiBar";
+import { MobileDock } from "@/components/dash/MobileDock";
+import { InstallPwa } from "@/components/InstallPwa";
 
 /** 3×3 点阵 LOGO */
 function DotLogo({ size = 18 }: { size?: number }) {
@@ -77,11 +79,11 @@ export default function CrmPage() {
             flexWrap: "wrap",
           }}
         >
-          <DotLogo />
+          <span className="nx-logo"><DotLogo /></span>
           <Link to="/" className="nbtn" style={{ textDecoration: "none" }}>
             ← 返回看板
           </Link>
-          <span className="font-dot" style={{ fontSize: 16, letterSpacing: "0.06em" }}>
+          <span className="font-dot nx-brand" style={{ fontSize: 17, letterSpacing: "0.06em" }}>
             WTC·CRM
           </span>
           <span
@@ -134,7 +136,11 @@ export default function CrmPage() {
               onClick={() => setTab(t.key)}
               style={
                 tab === t.key
-                  ? { color: "var(--n-text)", borderColor: "var(--n-text)" }
+                  ? {
+                      color: "var(--n-text)",
+                      borderColor: "#818cf8",
+                      boxShadow: "0 0 14px -6px rgba(129,140,248,0.9)",
+                    }
                   : undefined
               }
             >
@@ -143,17 +149,24 @@ export default function CrmPage() {
           ))}
         </nav>
 
-        {/* 页面内容 */}
+        {/* 页面内容（Tab 切换带入场动效） */}
         <main style={{ minHeight: "calc(100dvh - 160px)" }}>
-          {tab === "relationships" && <RelationshipsPage isAdmin={isAdmin} />}
-          {tab === "report" && <ReportPage />}
-          {tab === "customers" && <CustomersPage isAdmin={isAdmin} />}
-          {tab === "pipeline" && <PipelinePage isAdmin={isAdmin} />}
-          {tab === "queue" && <QueuePage isAdmin={isAdmin} />}
-          {tab === "samples" && <SamplesPage isAdmin={isAdmin} />}
-          {tab === "suppliers" && <SuppliersPage isAdmin={isAdmin} />}
+          <div key={tab} className="nx-tab-in">
+            {tab === "relationships" && <RelationshipsPage isAdmin={isAdmin} />}
+            {tab === "report" && <ReportPage />}
+            {tab === "customers" && <CustomersPage isAdmin={isAdmin} />}
+            {tab === "pipeline" && <PipelinePage isAdmin={isAdmin} />}
+            {tab === "queue" && <QueuePage isAdmin={isAdmin} />}
+            {tab === "samples" && <SamplesPage isAdmin={isAdmin} />}
+            {tab === "suppliers" && <SuppliersPage isAdmin={isAdmin} />}
+          </div>
         </main>
       </div>
+
+      {/* 手机端：底部 Dock 占位 + Dock + 安装引导 */}
+      <div className="nx-dock-gap" aria-hidden />
+      <MobileDock />
+      <InstallPwa />
     </div>
   );
 }

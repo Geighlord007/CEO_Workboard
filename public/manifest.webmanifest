@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "每周任务控制台 WTC",
+  "short_name": "WTC",
+  "description": "每周任务 · 日程 · CRM 关系管理一体化工作台",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07080f",
+  "theme_color": "#07080f",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

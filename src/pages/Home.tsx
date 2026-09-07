@@ -20,6 +20,8 @@ import { AiAssistant } from "@/components/dash/AiAssistant";
 import { RisksCard } from "@/components/dash/RisksCard";
 import { PipelineCard } from "@/components/dash/PipelineCard";
 import { LinksCard } from "@/components/dash/LinksCard";
+import { MobileDock } from "@/components/dash/MobileDock";
+import { InstallPwa } from "@/components/InstallPwa";
 import { addDays, dayFmt, mondayOf, weekNo } from "@/lib/dates";
 
 /** 3×3 点阵 LOGO */
@@ -117,8 +119,8 @@ export default function Home() {
       <div style={{ maxWidth: 1560, margin: "0 auto", padding: "12px 16px 8px" }}>
         {/* ===== 顶栏 ===== */}
         <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "2px 2px 12px", flexWrap: "wrap" }}>
-          <DotLogo />
-          <span className="font-dot" style={{ fontSize: 16, letterSpacing: "0.06em" }}>WTC</span>
+          <span className="nx-logo"><DotLogo /></span>
+          <span className="font-dot nx-brand" style={{ fontSize: 17, letterSpacing: "0.06em" }}>WTC</span>
           <span className="nlabel">每周任务控制台</span>
           <span className="nlabel" style={{ color: "var(--n-faint)" }}>{weekRange}</span>
           <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -158,6 +160,11 @@ export default function Home() {
             T = 切换主题 · 拖把手缩放卡片 · 双击把手复原
           </span>
         </footer>
+
+        {/* 手机端：底部 Dock 占位 + Dock + 安装引导 */}
+        <div className="nx-dock-gap" aria-hidden />
+        <MobileDock />
+        <InstallPwa />
       </div>
     </TooltipProvider>
   );
