@@ -29,16 +29,18 @@ export const DATA_TABLES: Record<string, { label: string; edit: string[] }> = {
   deals: { label: "旧版 BD 推进(遗留)", edit: ["name", "stage", "note"] },
   links: { label: "快捷入口", edit: ["label", "url", "sortOrder"] },
   activity: { label: "每日打卡/收工", edit: ["day", "level", "offworkMin"] },
-  accounts: { label: "客户/顾问/合作方", edit: ["name", "relationshipType", "kind", "industry", "stage", "website", "location", "source", "nextActionAt", "lastContactAt", "tags"] },
-  contacts: { label: "联系人", edit: ["name", "title", "dept", "roleInDeal", "stance", "influence", "email", "wechat", "phone", "memo", "lastContactAt"] },
+  accounts: { label: "客户/合作方", edit: ["name", "relationshipType", "kind", "industry", "stage", "website", "location", "source", "nextActionAt", "lastContactAt", "tags", "memo", "product", "businessModel", "cooperation", "organism", "maturity"] },
+  contacts: { label: "人脉/联系人", edit: ["accountId", "name", "title", "dept", "roleInDeal", "stance", "influence", "email", "wechat", "phone", "memo", "lastContactAt", "roleType", "outreachStage", "linkedinUrl", "referral", "tags", "emailKind", "affiliation"] },
   opportunities: { label: "商机", edit: ["title", "stage", "amountCny", "probability", "expectedClose", "nextAction", "nextActionDue", "lostReason", "tags", "memo", "techDiscussionDone", "proposalSent", "sampleSent", "pocPassed", "ndaSigned", "contractSigned"] },
   activities: { label: "CRM 沟通记录", edit: ["summary", "contacts", "nextActionAt", "happenedAt"] },
   samples: { label: "样品", edit: ["title", "qtySpec", "sentAt", "tracking", "status", "feedback", "followUpAt"] },
-  suppliers: { label: "供应商", edit: ["name", "stage", "category", "contactName", "contactPhone", "contactWechat", "amountCny", "startDate", "endDate", "accountTerms", "singleSource", "risk", "memo"] },
-  investors: { label: "投资人", edit: ["name", "firm", "stage", "contactName", "tags", "memo"] },
+  suppliers: { label: "供应商", edit: ["name", "stage", "category", "contactName", "contactPhone", "contactWechat", "amountCny", "startDate", "endDate", "accountTerms", "singleSource", "risk", "memo", "tags", "location", "ndaSigned", "ndaDate"] },
+  investors: { label: "投资人", edit: ["name", "firm", "round", "stage", "contactName", "contactTitle", "contactEmail", "emailKind", "contactLinkedin", "firstContactAt", "lastContactAt", "nextAction", "progressNote", "referral", "tags", "memo"] },
   rfqs: { label: "询价", edit: ["item", "qty", "priceCny", "deliveryDays", "validUntil", "status", "memo"] },
   quality_events: { label: "供应商质量事件", edit: ["summary", "impact", "resolvedAt", "memo"] },
   docs: { label: "文档外链", edit: ["title", "url", "version"] },
+  company_library: { label: "公司库(情报·只读)", edit: [] },
+  funding_events: { label: "融资事件(情报·只读)", edit: [] },
 };
 
 export const DATA_TABLE_KEYS = Object.keys(DATA_TABLES) as [string, ...string[]];

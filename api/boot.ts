@@ -6,7 +6,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
-import { loginWithGoogle } from "./google-auth";
+import { loginWithGoogle, signSessionToken } from "./google-auth";
 import { loginWithPassword } from "./password-auth";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { Session } from "@contracts/constants";
@@ -65,6 +65,24 @@ app.post("/api/auth/password/login", async (c) => {
   return c.json({ ok: true });
 });
 
+/** vite dev（SSR）环境下 import.meta.env.MODE = "development"；生产 esbuild 打包后不存在 */
+function viteDevMode(): boolean {
+  const viteEnv = (import.meta as unknown as { env?: { MODE?: string } }).env;
+  return viteEnv?.MODE === "development";
+}
+
+// 本地开发免登录（仅 vite dev 环境注册；生产构建里 import.meta.env 不存在 → 404）
+app.post("/api/auth/dev-login", async (c) => {
+  if (!viteDevMode()) {
+    return c.json({ error: "Not Found" }, 404);
+  }
+  const email = env.adminEmail || "dev@local";
+  const token = await signSessionToken({ email, name: "本地预览" });
+  const opts = getSessionCookieOptions(c.req.raw.headers);
+  setCookie(c, Session.cookieName, token, { ...opts, maxAge: Session.maxAgeMs / 1000 });
+  return c.json({ ok: true, email });
+});
+
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",
@@ -82,7 +100,7 @@ app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
 
-if (env.isProduction) {
+if (env.isProduction && !viteDevMode()) {
   const { serve } = await import("@hono/node-server");
   const { serveStaticFiles } = await import("./lib/vite");
   serveStaticFiles(app);

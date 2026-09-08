@@ -1,5 +1,5 @@
 import { trpc } from "@/providers/trpc";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { LOGIN_PATH } from "@/const";
 
@@ -35,24 +35,49 @@ export function useAuth(options?: UseAuthOptions) {
 
   const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
 
+  /**
+   * 本地开发免登录：仅在 vite dev（import.meta.env.DEV）下自动调用 /api/auth/dev-login，
+   * 生产构建里这段代码会被剔除，且后端该路由在生产返回 404，双重保险。
+   */
+  const [devPending, setDevPending] = useState(import.meta.env.DEV);
+  const devTried = useRef(false);
   useEffect(() => {
-    if (redirectOnUnauthenticated && !isLoading && !user) {
+    if (!import.meta.env.DEV || devTried.current) return;
+    if (isLoading || user) {
+      if (user) setDevPending(false);
+      return;
+    }
+    devTried.current = true;
+    void (async () => {
+      try {
+        await fetch("/api/auth/dev-login", { method: "POST" });
+        await refetch();
+      } catch {
+        /* 忽略：失败则回到正常登录流程 */
+      } finally {
+        setDevPending(false);
+      }
+    })();
+  }, [isLoading, user, refetch]);
+
+  useEffect(() => {
+    if (redirectOnUnauthenticated && !isLoading && !devPending && !user) {
       const currentPath = window.location.pathname;
       if (currentPath !== redirectPath) {
         navigate(redirectPath);
       }
     }
-  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
+  }, [redirectOnUnauthenticated, isLoading, devPending, user, navigate, redirectPath]);
 
   return useMemo(
     () => ({
       user: user ?? null,
       isAuthenticated: !!user,
-      isLoading: isLoading || logoutMutation.isPending,
+      isLoading: isLoading || logoutMutation.isPending || devPending,
       error,
       logout,
       refresh: refetch,
     }),
-    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
+    [user, isLoading, logoutMutation.isPending, devPending, error, logout, refetch],
   );
 }

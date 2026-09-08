@@ -10,6 +10,13 @@ import { SamplesPage } from "@/components/crm/SamplesPage";
 import { SuppliersPage } from "@/components/crm/SuppliersPage";
 import { RelationshipsPage } from "@/components/crm/RelationshipsPage";
 import { CrmAiBar } from "@/components/crm/CrmAiBar";
+import { CustomersTable } from "@/components/modules/CustomersTable";
+import { OpportunitiesTable } from "@/components/modules/OpportunitiesTable";
+import { SuppliersTable } from "@/components/modules/SuppliersTable";
+import { InvestorsTable } from "@/components/modules/InvestorsTable";
+import { PeopleTable } from "@/components/modules/PeopleTable";
+import { CompaniesTable } from "@/components/modules/CompaniesTable";
+import { FundingEventsTable } from "@/components/modules/FundingEventsTable";
 import { MobileDock } from "@/components/dash/MobileDock";
 import { InstallPwa } from "@/components/InstallPwa";
 
@@ -33,22 +40,66 @@ function DotLogo({ size = 18 }: { size?: number }) {
   );
 }
 
-type TabKey = "relationships" | "report" | "customers" | "pipeline" | "queue" | "samples" | "suppliers";
+type ModuleKey = "business" | "procurement" | "funding" | "people" | "intel" | "report";
+type SubKey =
+  | "customersTable" | "oppsTable" | "queue" | "samples" | "customersCard" | "pipeline"
+  | "suppliersTable" | "suppliersManage"
+  | "investorsTable" | "fundingPush"
+  | "peopleTable"
+  | "companies" | "fundingEvents"
+  | "report";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "relationships", label: "关系" },
-  { key: "report", label: "报表" },
-  { key: "customers", label: "客户" },
-  { key: "pipeline", label: "商机" },
-  { key: "queue", label: "跟进" },
-  { key: "samples", label: "样品" },
-  { key: "suppliers", label: "供应商" },
+interface Sub { key: SubKey; label: string; el: (isAdmin: boolean) => React.ReactNode }
+interface Module { key: ModuleKey; label: string; en: string; subs: Sub[] }
+
+const MODULES: Module[] = [
+  {
+    key: "business", label: "业务", en: "Business",
+    subs: [
+      { key: "customersTable", label: "客户/合作方", el: (a) => <CustomersTable isAdmin={a} /> },
+      { key: "oppsTable", label: "商机", el: (a) => <OpportunitiesTable isAdmin={a} /> },
+      { key: "queue", label: "跟进", el: (a) => <QueuePage isAdmin={a} /> },
+      { key: "samples", label: "样品", el: (a) => <SamplesPage isAdmin={a} /> },
+      { key: "customersCard", label: "客户卡", el: (a) => <CustomersPage isAdmin={a} /> },
+      { key: "pipeline", label: "商机管道", el: (a) => <PipelinePage isAdmin={a} /> },
+    ],
+  },
+  {
+    key: "procurement", label: "采购", en: "Procurement",
+    subs: [
+      { key: "suppliersTable", label: "供应商", el: (a) => <SuppliersTable isAdmin={a} /> },
+      { key: "suppliersManage", label: "供应商管理", el: (a) => <SuppliersPage isAdmin={a} /> },
+    ],
+  },
+  {
+    key: "funding", label: "融资", en: "Funding",
+    subs: [
+      { key: "investorsTable", label: "投资人/基金", el: (a) => <InvestorsTable isAdmin={a} /> },
+      { key: "fundingPush", label: "融资推进", el: (a) => <RelationshipsPage isAdmin={a} /> },
+    ],
+  },
+  {
+    key: "people", label: "人脉", en: "Network",
+    subs: [{ key: "peopleTable", label: "人脉簿", el: (a) => <PeopleTable isAdmin={a} /> }],
+  },
+  {
+    key: "intel", label: "情报", en: "Intelligence",
+    subs: [
+      { key: "companies", label: "公司档案", el: (a) => <CompaniesTable isAdmin={a} /> },
+      { key: "fundingEvents", label: "融资事件", el: (a) => <FundingEventsTable isAdmin={a} /> },
+    ],
+  },
+  {
+    key: "report", label: "报表", en: "Reports",
+    subs: [{ key: "report", label: "周报/看板", el: () => <ReportPage /> }],
+  },
 ];
 
 export default function CrmPage() {
   const { user, isLoading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [theme, toggleTheme] = useTheme();
-  const [tab, setTab] = useState<TabKey>("relationships");
+  const [mod, setMod] = useState<ModuleKey>("business");
+  const [sub, setSub] = useState<SubKey>("customersTable");
 
   if (isLoading) {
     return (
@@ -65,6 +116,13 @@ export default function CrmPage() {
   if (!user) return null;
 
   const isAdmin = user.role === "admin";
+  const activeModule = MODULES.find((m) => m.key === mod) ?? MODULES[0];
+  const activeSub = activeModule.subs.find((s) => s.key === sub) ?? activeModule.subs[0];
+
+  const pickModule = (m: Module) => {
+    setMod(m.key);
+    setSub(m.subs[0].key);
+  };
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--n-bg)" }}>
@@ -72,11 +130,7 @@ export default function CrmPage() {
         {/* 顶栏 */}
         <header
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "2px 2px 12px",
-            flexWrap: "wrap",
+            display: "flex", alignItems: "center", gap: 12, padding: "2px 2px 12px", flexWrap: "wrap",
           }}
         >
           <span className="nx-logo"><DotLogo /></span>
@@ -106,9 +160,7 @@ export default function CrmPage() {
             >
               <i
                 style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
+                  width: 7, height: 7, borderRadius: "50%",
                   background: theme === "dark" ? "var(--n-text)" : "var(--n-accent)",
                   display: "inline-block",
                 }}
@@ -127,38 +179,50 @@ export default function CrmPage() {
         {/* AI 快捷栏 */}
         {isAdmin && <CrmAiBar />}
 
-        {/* 主导航 Tab */}
-        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          {TABS.map((t) => (
+        {/* 一级模块：业务 / 采购 / 融资 / 人脉 / 情报 / 报表 */}
+        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          {MODULES.map((m) => (
             <button
-              key={t.key}
+              key={m.key}
               className="nbtn"
-              onClick={() => setTab(t.key)}
+              onClick={() => pickModule(m)}
+              title={m.en}
               style={
-                tab === t.key
-                  ? {
-                      color: "var(--n-text)",
-                      borderColor: "#818cf8",
-                      boxShadow: "0 0 14px -6px rgba(129,140,248,0.9)",
-                    }
+                mod === m.key
+                  ? { color: "var(--n-text)", borderColor: "#818cf8", boxShadow: "0 0 14px -6px rgba(129,140,248,0.9)" }
                   : undefined
               }
             >
-              {t.label}
+              {m.label}
+              <span style={{ opacity: 0.45, fontSize: 10, marginLeft: 6 }}>{m.en}</span>
             </button>
           ))}
         </nav>
 
-        {/* 页面内容（Tab 切换带入场动效） */}
+        {/* 二级子页 */}
+        {activeModule.subs.length > 1 && (
+          <nav style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12, opacity: 0.95 }}>
+            {activeModule.subs.map((s) => (
+              <button
+                key={s.key}
+                className="nbtn"
+                onClick={() => setSub(s.key)}
+                style={
+                  sub === s.key
+                    ? { color: "var(--n-accent)", borderColor: "var(--n-accent)" }
+                    : { opacity: 0.7 }
+                }
+              >
+                {s.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {/* 页面内容（切换带入场动效） */}
         <main style={{ minHeight: "calc(100dvh - 160px)" }}>
-          <div key={tab} className="nx-tab-in">
-            {tab === "relationships" && <RelationshipsPage isAdmin={isAdmin} />}
-            {tab === "report" && <ReportPage />}
-            {tab === "customers" && <CustomersPage isAdmin={isAdmin} />}
-            {tab === "pipeline" && <PipelinePage isAdmin={isAdmin} />}
-            {tab === "queue" && <QueuePage isAdmin={isAdmin} />}
-            {tab === "samples" && <SamplesPage isAdmin={isAdmin} />}
-            {tab === "suppliers" && <SuppliersPage isAdmin={isAdmin} />}
+          <div key={`${mod}-${sub}`} className="nx-tab-in">
+            {activeSub.el(isAdmin)}
           </div>
         </main>
       </div>

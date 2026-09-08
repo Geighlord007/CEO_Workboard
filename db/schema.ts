@@ -216,6 +216,19 @@ export const accounts = mysqlTable("accounts", {
   tags: varchar("tags", { length: 500 }),
   /** 自由备注（旧表导入/日常随手记） */
   memo: text("memo"),
+  /** ===== 结构定稿 v3：memo 拆出的结构化字段 ===== */
+  /** 产品（做什么：产品部分） */
+  product: varchar("product", { length: 255 }),
+  /** 业务模式（B2B 配料 / 品牌 / 服务 / CDMO…） */
+  businessModel: varchar("businessModel", { length: 120 }),
+  /** 合作内容（我们和他们谈什么） */
+  cooperation: varchar("cooperation", { length: 500 }),
+  /** 底盘/技术（丝状真菌 / 酵母 / 无细胞…） */
+  organism: varchar("organism", { length: 120 }),
+  /** 成熟度（初创 / 有收入 / 已上市） */
+  maturity: varchar("maturity", { length: 24 }),
+  /** 导入溯源（合并来源、原始行号等，界面默认隐藏） */
+  importNote: text("importNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -252,6 +265,10 @@ export const contacts = mysqlTable("contacts", {
   outreachStage: varchar("outreachStage", { length: 24 }),
   tags: varchar("tags", { length: 500 }),
   emailKind: varchar("emailKind", { length: 16 }),
+  /** 所属机构（原文；有 accountId 时表示当前挂靠机构） */
+  affiliation: varchar("affiliation", { length: 255 }),
+  /** 导入溯源（界面默认隐藏） */
+  importNote: text("importNote"),
   externalSource: varchar("externalSource", { length: 32 }),
   externalId: varchar("externalId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -359,6 +376,8 @@ export const suppliers = mysqlTable("suppliers", {
   contactName: varchar("contactName", { length: 120 }),
   contactPhone: varchar("contactPhone", { length: 60 }),
   contactWechat: varchar("contactWechat", { length: 120 }),
+  /** 地区（国家 / 城市） */
+  location: varchar("location", { length: 255 }),
   /** 合同/项目金额（人民币），推进卡与汇总用它 */
   amountCny: decimal("amountCny", { precision: 14, scale: 2 }),
   /** 合同/项目开始日期 */
@@ -366,10 +385,16 @@ export const suppliers = mysqlTable("suppliers", {
   /** 预计/实际结束日期 */
   endDate: varchar("endDate", { length: 10 }),
   accountTerms: varchar("accountTerms", { length: 120 }),
+  /** NDA 是否已签 */
+  ndaSigned: boolean("ndaSigned"),
+  /** NDA 签署日期 */
+  ndaDate: varchar("ndaDate", { length: 10 }),
   singleSource: boolean("singleSource").notNull().default(false),
   risk: varchar("risk", { length: 1 }),
   tags: varchar("tags", { length: 500 }),
   memo: text("memo"),
+  /** 导入溯源（界面默认隐藏） */
+  importNote: text("importNote"),
   externalSource: varchar("externalSource", { length: 32 }),
   externalId: varchar("externalId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -404,8 +429,16 @@ export const investors = mysqlTable("investors", {
   /** verified / unverified / linkedin(该行邮箱列实为LinkedIn) */
   emailKind: varchar("emailKind", { length: 16 }),
   contactLinkedin: varchar("contactLinkedin", { length: 500 }),
+  /** 首次接触日期（本轮起点） */
+  firstContactAt: varchar("firstContactAt", { length: 10 }),
   lastContactAt: varchar("lastContactAt", { length: 10 }),
   nextAction: varchar("nextAction", { length: 500 }),
+  /** 沟通记录/进展（最近要点；完整时间线走 activities） */
+  progressNote: text("progressNote"),
+  /** 引荐人/来源（谁介绍的） */
+  referral: varchar("referral", { length: 255 }),
+  /** 导入溯源（界面默认隐藏） */
+  importNote: text("importNote"),
   /** 标签：VC / 产业资本 / 政府基金 / 天使 / 银行（逗号分隔） */
   tags: varchar("tags", { length: 500 }),
   memo: text("memo"),

@@ -4,7 +4,7 @@
  * 写操作：adminWrite（仅总助可写）
  */
 import { z } from "zod";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery, adminWrite } from "./middleware";
 import { getDb } from "./queries/connection";
@@ -25,6 +25,9 @@ import {
   SUPPLIER_STAGES,
   INVESTOR_STAGES,
   ACCOUNT_STAGES,
+  ACCOUNT_RELATIONSHIP_TYPES,
+  companyLibrary,
+  fundingEvents,
 } from "@db/schema";
 import { REL_TYPES, isArchivedStage, type RelationshipType } from "@contracts/crm";
 import {
@@ -99,10 +102,22 @@ export const crmRouter = createRouter({
           patch: z.object({
             name: z.string().min(1).max(255).optional(),
             kind: accountKindSchema.optional(),
+            relationshipType: z.enum(ACCOUNT_RELATIONSHIP_TYPES).optional(),
             industry: z.string().max(64).nullish(),
             source: z.string().max(32).nullish(),
             stage: accountStageSchema.optional(),
             tags: z.string().max(500).nullish(),
+            memo: z.string().nullish(),
+            website: z.string().max(500).nullish(),
+            location: z.string().max(255).nullish(),
+            nextActionAt: d.nullish(),
+            lastContactAt: d.nullish(),
+            /** 结构定稿 v3 字段 */
+            product: z.string().max(255).nullish(),
+            businessModel: z.string().max(120).nullish(),
+            cooperation: z.string().max(500).nullish(),
+            organism: z.string().max(120).nullish(),
+            maturity: z.string().max(24).nullish(),
           }),
         }),
       )
@@ -111,10 +126,21 @@ export const crmRouter = createRouter({
         const set: Partial<typeof accounts.$inferInsert> = {};
         if (p.name !== undefined) set.name = p.name;
         if (p.kind !== undefined) set.kind = p.kind;
+        if (p.relationshipType !== undefined) set.relationshipType = p.relationshipType;
         if (p.industry !== undefined) set.industry = p.industry;
         if (p.source !== undefined) set.source = p.source;
         if (p.stage !== undefined) set.stage = p.stage;
         if (p.tags !== undefined) set.tags = p.tags;
+        if (p.memo !== undefined) set.memo = p.memo;
+        if (p.website !== undefined) set.website = p.website;
+        if (p.location !== undefined) set.location = p.location;
+        if (p.nextActionAt !== undefined) set.nextActionAt = p.nextActionAt;
+        if (p.lastContactAt !== undefined) set.lastContactAt = p.lastContactAt;
+        if (p.product !== undefined) set.product = p.product;
+        if (p.businessModel !== undefined) set.businessModel = p.businessModel;
+        if (p.cooperation !== undefined) set.cooperation = p.cooperation;
+        if (p.organism !== undefined) set.organism = p.organism;
+        if (p.maturity !== undefined) set.maturity = p.maturity;
         await getDb().update(accounts).set(set).where(eq(accounts.id, input.id));
       }),
 
@@ -127,6 +153,9 @@ export const crmRouter = createRouter({
   }),
 
   contact: createRouter({
+    /** 人脉簿：全部人（可无机构挂靠） */
+    list: authedQuery.query(() => getDb().select().from(contacts).orderBy(asc(contacts.name))),
+
     listByAccount: authedQuery
       .input(z.object({ accountId: z.number().int().positive() }))
       .query(({ input }) =>
@@ -136,7 +165,7 @@ export const crmRouter = createRouter({
     create: adminWrite
       .input(
         z.object({
-          accountId: z.number().int().positive(),
+          accountId: z.number().int().positive().nullish(),
           name: z.string().trim().min(1).max(120),
           roleInDeal: contactRoleSchema.nullish(),
           title: z.string().max(120).nullish(),
@@ -149,7 +178,7 @@ export const crmRouter = createRouter({
       )
       .mutation(async ({ input }) => {
         const [res] = await getDb().insert(contacts).values({
-          accountId: input.accountId,
+          accountId: input.accountId ?? null,
           name: input.name,
           roleInDeal: input.roleInDeal ?? null,
           title: input.title ?? null,
@@ -168,6 +197,7 @@ export const crmRouter = createRouter({
           id: z.number().int().positive(),
           patch: z.object({
             name: z.string().min(1).max(120).optional(),
+            accountId: z.number().int().positive().nullish(),
             roleInDeal: contactRoleSchema.nullish(),
             title: z.string().max(120).nullish(),
             email: z.string().max(255).nullish(),
@@ -176,6 +206,15 @@ export const crmRouter = createRouter({
             stance: z.string().max(16).nullish(),
             influence: z.string().max(1).nullish(),
             memo: z.string().nullish(),
+            /** v2 人脉簿字段 */
+            roleType: z.string().max(32).nullish(),
+            outreachStage: z.string().max(24).nullish(),
+            linkedinUrl: z.string().max(255).nullish(),
+            referral: z.string().max(255).nullish(),
+            tags: z.string().max(500).nullish(),
+            emailKind: z.string().max(16).nullish(),
+            affiliation: z.string().max(255).nullish(),
+            lastContactAt: d.nullish(),
           }),
         }),
       )
@@ -183,6 +222,7 @@ export const crmRouter = createRouter({
         const p = input.patch;
         const set: Partial<typeof contacts.$inferInsert> = {};
         if (p.name !== undefined) set.name = p.name;
+        if (p.accountId !== undefined) set.accountId = p.accountId;
         if (p.roleInDeal !== undefined) set.roleInDeal = p.roleInDeal;
         if (p.title !== undefined) set.title = p.title;
         if (p.email !== undefined) set.email = p.email;
@@ -191,6 +231,13 @@ export const crmRouter = createRouter({
         if (p.stance !== undefined) set.stance = p.stance;
         if (p.influence !== undefined) set.influence = p.influence;
         if (p.memo !== undefined) set.memo = p.memo;
+        if (p.roleType !== undefined) set.roleType = p.roleType;
+        if (p.outreachStage !== undefined) set.outreachStage = p.outreachStage;
+        if (p.linkedinUrl !== undefined) set.linkedinUrl = p.linkedinUrl;
+        if (p.referral !== undefined) set.referral = p.referral;
+        if (p.tags !== undefined) set.tags = p.tags;
+        if (p.emailKind !== undefined) set.emailKind = p.emailKind;
+        if (p.lastContactAt !== undefined) set.lastContactAt = p.lastContactAt;
         await getDb().update(contacts).set(set).where(eq(contacts.id, input.id));
       }),
 
@@ -499,6 +546,10 @@ export const crmRouter = createRouter({
             singleSource: z.boolean().nullish(),
             risk: supplierRiskSchema.nullish(),
             memo: z.string().nullish(),
+            tags: z.string().max(500).nullish(),
+            location: z.string().max(255).nullish(),
+            ndaSigned: z.boolean().nullish(),
+            ndaDate: d.nullish(),
           }),
         }),
       )
@@ -518,6 +569,10 @@ export const crmRouter = createRouter({
         if (p.singleSource !== undefined) set.singleSource = p.singleSource ?? false;
         if (p.risk !== undefined) set.risk = p.risk;
         if (p.memo !== undefined) set.memo = p.memo;
+        if (p.tags !== undefined) set.tags = p.tags;
+        if (p.location !== undefined) set.location = p.location;
+        if (p.ndaSigned !== undefined) set.ndaSigned = p.ndaSigned;
+        if (p.ndaDate !== undefined) set.ndaDate = p.ndaDate;
         await getDb().update(suppliers).set(set).where(eq(suppliers.id, input.id));
       }),
 
@@ -787,5 +842,114 @@ export const crmRouter = createRouter({
             .where(eq(accounts.id, input.id));
         }
       }),
+  }),
+
+  /** 投资人/基金（融资侧；每轮独立，round 标记轮次） */
+  investor: createRouter({
+    list: authedQuery.query(() => getDb().select().from(investors).orderBy(asc(investors.name))),
+
+    update: adminWrite
+      .input(
+        z.object({
+          id: z.number().int().positive(),
+          patch: z.object({
+            name: z.string().min(1).max(255).optional(),
+            firm: z.string().max(255).nullish(),
+            round: z.string().max(32).nullish(),
+            stage: z.enum(INVESTOR_STAGES).optional(),
+            contactName: z.string().max(120).nullish(),
+            contactTitle: z.string().max(120).nullish(),
+            contactEmail: z.string().max(255).nullish(),
+            emailKind: z.string().max(16).nullish(),
+            contactLinkedin: z.string().max(500).nullish(),
+            firstContactAt: d.nullish(),
+            lastContactAt: d.nullish(),
+            nextAction: z.string().max(500).nullish(),
+            progressNote: z.string().nullish(),
+            referral: z.string().max(255).nullish(),
+            tags: z.string().max(500).nullish(),
+            memo: z.string().nullish(),
+          }),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const p = input.patch;
+        const set: Partial<typeof investors.$inferInsert> = {};
+        if (p.name !== undefined) set.name = p.name;
+        if (p.firm !== undefined) set.firm = p.firm;
+        if (p.round !== undefined) set.round = p.round;
+        if (p.stage !== undefined) set.stage = p.stage;
+        if (p.contactName !== undefined) set.contactName = p.contactName;
+        if (p.contactTitle !== undefined) set.contactTitle = p.contactTitle;
+        if (p.contactEmail !== undefined) set.contactEmail = p.contactEmail;
+        if (p.emailKind !== undefined) set.emailKind = p.emailKind;
+        if (p.contactLinkedin !== undefined) set.contactLinkedin = p.contactLinkedin;
+        if (p.firstContactAt !== undefined) set.firstContactAt = p.firstContactAt;
+        if (p.lastContactAt !== undefined) set.lastContactAt = p.lastContactAt;
+        if (p.nextAction !== undefined) set.nextAction = p.nextAction;
+        if (p.progressNote !== undefined) set.progressNote = p.progressNote;
+        if (p.referral !== undefined) set.referral = p.referral;
+        if (p.tags !== undefined) set.tags = p.tags;
+        if (p.memo !== undefined) set.memo = p.memo;
+        await getDb().update(investors).set(set).where(eq(investors.id, input.id));
+      }),
+  }),
+
+  /** 情报：公司档案（公司库主表 + 融资事件子表，界面一体化） */
+  intel: createRouter({
+    companies: authedQuery.query(() =>
+      getDb()
+        .select({
+          id: companyLibrary.id,
+          name: companyLibrary.name,
+          nameNormalized: companyLibrary.nameNormalized,
+          domain: companyLibrary.domain,
+          industries: companyLibrary.industries,
+          hq: companyLibrary.hq,
+          foundedYear: companyLibrary.foundedYear,
+          employeesBucket: companyLibrary.employeesBucket,
+          totalFundingUsd: companyLibrary.totalFundingUsd,
+          roundCount: companyLibrary.roundCount,
+          lastFundingDate: companyLibrary.lastFundingDate,
+          lastFundingType: companyLibrary.lastFundingType,
+          ipoStatus: companyLibrary.ipoStatus,
+          acquiredBy: companyLibrary.acquiredBy,
+          acquiredPrice: companyLibrary.acquiredPrice,
+          acquiredDate: companyLibrary.acquiredDate,
+          cbUrl: companyLibrary.cbUrl,
+          enzymeTag: companyLibrary.enzymeTag,
+          sliceTags: companyLibrary.sliceTags,
+          snapshotDate: companyLibrary.snapshotDate,
+          source: companyLibrary.source,
+          /** 列表用简介（截断 200 字，避免整表传输过大；详情抽屉仍取全文） */
+          descriptionBrief: sql<string | null>`LEFT(${companyLibrary.description}, 200)`,
+        })
+        .from(companyLibrary)
+        .orderBy(asc(companyLibrary.name)),
+    ),
+
+    company: authedQuery
+      .input(z.object({ id: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const [row] = await getDb().select().from(companyLibrary).where(eq(companyLibrary.id, input.id)).limit(1);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "公司不存在" });
+        return row;
+      }),
+
+    /** 某公司的全部融资轮次（时间线） */
+    companyFunding: authedQuery
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .query(({ input }) =>
+        getDb()
+          .select()
+          .from(fundingEvents)
+          .where(eq(fundingEvents.companyId, input.companyId))
+          .orderBy(desc(fundingEvents.announcedDate)),
+      ),
+
+    /** 全部融资事件（按需在页面侧筛选） */
+    funding: authedQuery.query(() =>
+      getDb().select().from(fundingEvents).orderBy(desc(fundingEvents.announcedDate)),
+    ),
   }),
 });

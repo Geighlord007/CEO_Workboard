@@ -7,6 +7,7 @@ import '@fontsource/ibm-plex-mono/500.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import './index.css'
 import { TRPCProvider } from "@/providers/trpc"
+import { Toaster } from "@/components/ui/sonner"
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <TRPCProvider>
         <App />
+        <Toaster position="top-center" richColors closeButton />
       </TRPCProvider>
     </BrowserRouter>
   </StrictMode>,
