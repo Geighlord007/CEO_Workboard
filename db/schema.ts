@@ -214,6 +214,8 @@ export const accounts = mysqlTable("accounts", {
   lastContactAt: varchar("lastContactAt", { length: 10 }),
   aiSummary: text("aiSummary"),
   tags: varchar("tags", { length: 500 }),
+  /** 自由备注（旧表导入/日常随手记） */
+  memo: text("memo"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -225,7 +227,8 @@ export type Account = typeof accounts.$inferSelect;
 /** 联系人：隶属 Account，可多角色（决策链画像） */
 export const contacts = mysqlTable("contacts", {
   id: serial("id").primaryKey(),
-  accountId: int("accountId").notNull(),
+  /** 人脉簿 v1.3：可空 = 允许独立人脉（顾问/退休高管等无机构挂靠） */
+  accountId: int("accountId"),
   name: varchar("name", { length: 120 }).notNull(),
   title: varchar("title", { length: 120 }),
   dept: varchar("dept", { length: 120 }),
@@ -240,6 +243,17 @@ export const contacts = mysqlTable("contacts", {
   phone: varchar("phone", { length: 60 }),
   memo: text("memo"),
   lastContactAt: varchar("lastContactAt", { length: 10 }),
+  /** v1.3 人脉簿扩展 */
+  linkedinUrl: varchar("linkedinUrl", { length: 255 }),
+  /** 人脉角色 code：academic 学术/founder 创始人CEO/industryExec 产业高管/industrySales 行业销售/consultant 顾问/investor 投资人/retiredExec 退休高管/other 其他（双语 label 走文案层） */
+  roleType: varchar("roleType", { length: 32 }),
+  referral: varchar("referral", { length: 255 }),
+  /** 外联状态：toContact 待触达/invited 已邀约/meeting 已约会议/engaging 推进交流/signed 已签约/closed 结束 */
+  outreachStage: varchar("outreachStage", { length: 24 }),
+  tags: varchar("tags", { length: 500 }),
+  emailKind: varchar("emailKind", { length: 16 }),
+  externalSource: varchar("externalSource", { length: 32 }),
+  externalId: varchar("externalId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Contact = typeof contacts.$inferSelect;
@@ -282,6 +296,8 @@ export const opportunities = mysqlTable("opportunities", {
   wonAt: varchar("wonAt", { length: 10 }),
   tags: varchar("tags", { length: 500 }),
   memo: text("memo"),
+  externalSource: varchar("externalSource", { length: 32 }),
+  externalId: varchar("externalId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -324,10 +340,10 @@ export const samples = mysqlTable("samples", {
 export type Sample = typeof samples.$inferSelect;
 
 /** 供应商阶段 = 合同级推进（单供应商当前一笔合作的旅程；🔴 终态 = 自动归档）
- * 进行中：contacting 交流 → quoting 询价 → nda 保密协议 → contract 合同 → executing 执行中
+ * prospecting 潜在·未接触（仅建档未接洽）→ contacting 交流 → quoting 询价 → nda 保密协议 → contract 合同 → executing 执行中
  * 终态：completed 合同结束(正常✓) / terminated 终止·弃用(提前结束) */
 export const SUPPLIER_STAGES = [
-  "contacting", "quoting", "nda", "contract", "executing",
+  "prospecting", "contacting", "quoting", "nda", "contract", "executing",
   "completed", "terminated",
 ] as const;
 
@@ -352,6 +368,7 @@ export const suppliers = mysqlTable("suppliers", {
   accountTerms: varchar("accountTerms", { length: 120 }),
   singleSource: boolean("singleSource").notNull().default(false),
   risk: varchar("risk", { length: 1 }),
+  tags: varchar("tags", { length: 500 }),
   memo: text("memo"),
   externalSource: varchar("externalSource", { length: 32 }),
   externalId: varchar("externalId", { length: 128 }),
@@ -363,9 +380,11 @@ export const suppliers = mysqlTable("suppliers", {
 });
 export type Supplier = typeof suppliers.$inferSelect;
 
-/** 投资人/VC 阶段（🔴 终态 = 自动归档；每轮融资独立） */
+/** 投资人/VC 阶段（每轮融资独立：新一轮=从「待触达」重新起跑；🔴 终态=归档）
+ * to_contact 待触达(建档/上轮遗留) → contacted 已接触 → deck 发资料 → pitched 路演 → dd 尽调 → ts TS → closing 交割 → funded 已投
+ * 终态：declined 放弃(带原因tag，下轮可重启) / withdrawn 撤回 */
 export const INVESTOR_STAGES = [
-  "contacted", "deck", "pitched", "dd", "ts", "closing",
+  "to_contact", "contacted", "deck", "pitched", "dd", "ts", "closing",
   "funded", "declined", "withdrawn",
 ] as const;
 
@@ -375,8 +394,16 @@ export const investors = mysqlTable("investors", {
   name: varchar("name", { length: 255 }).notNull(),
   /** 机构/基金名 */
   firm: varchar("firm", { length: 255 }),
+  /** stage=当前轮次推进状态；旧表无状态记录的行导入为 to_contact（不冒充已接触） */
   stage: mysqlEnum("stage", INVESTOR_STAGES).notNull().default("contacted"),
   contactName: varchar("contactName", { length: 120 }),
+  contactTitle: varchar("contactTitle", { length: 120 }),
+  contactEmail: varchar("contactEmail", { length: 255 }),
+  /** verified / unverified / linkedin(该行邮箱列实为LinkedIn) */
+  emailKind: varchar("emailKind", { length: 16 }),
+  contactLinkedin: varchar("contactLinkedin", { length: 500 }),
+  lastContactAt: varchar("lastContactAt", { length: 10 }),
+  nextAction: varchar("nextAction", { length: 500 }),
   /** 标签：VC / 产业资本 / 政府基金 / 天使 / 银行（逗号分隔） */
   tags: varchar("tags", { length: 500 }),
   memo: text("memo"),
@@ -436,3 +463,59 @@ export const docs = mysqlTable("docs", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Doc = typeof docs.$inferSelect;
+
+/* ============ 情报/观察模块 v1.3（CRM 一环；只读底库，未来每周 Agent 按 cbUrl upsert） ============ */
+
+/** 公司库（外部公司/行业地图）：Crunchbase 等公开快照，非运营跟进对象 */
+export const companyLibrary = mysqlTable("company_library", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameNormalized: varchar("nameNormalized", { length: 255 }),
+  domain: varchar("domain", { length: 255 }),
+  industries: varchar("industries", { length: 1000 }),
+  description: text("description"),
+  hq: varchar("hq", { length: 255 }),
+  foundedYear: varchar("foundedYear", { length: 8 }),
+  employeesBucket: varchar("employeesBucket", { length: 64 }),
+  totalFundingUsd: decimal("totalFundingUsd", { precision: 18, scale: 2 }),
+  lastFundingDate: varchar("lastFundingDate", { length: 10 }),
+  lastFundingType: varchar("lastFundingType", { length: 64 }),
+  ipoStatus: varchar("ipoStatus", { length: 64 }),
+  acquiredBy: varchar("acquiredBy", { length: 255 }),
+  acquiredPrice: varchar("acquiredPrice", { length: 64 }),
+  acquiredDate: varchar("acquiredDate", { length: 10 }),
+  /** 去重/未来 upsert 主键依据 */
+  cbUrl: varchar("cbUrl", { length: 500 }),
+  enzymeTag: varchar("enzymeTag", { length: 16 }),
+  sliceTags: varchar("sliceTags", { length: 500 }),
+  snapshotDate: varchar("snapshotDate", { length: 10 }),
+  source: varchar("source", { length: 64 }),
+  externalId: varchar("externalId", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+export type CompanyLibrary = typeof companyLibrary.$inferSelect;
+
+/** 融资事件库：逐轮融资事件（金额/估值/投资方），按公司查时间线、按投资方搜赛道、定价参照 */
+export const fundingEvents = mysqlTable("funding_events", {
+  id: serial("id").primaryKey(),
+  companyName: varchar("companyName", { length: 255 }).notNull(),
+  companyCbUrl: varchar("companyCbUrl", { length: 500 }),
+  roundType: varchar("roundType", { length: 64 }),
+  announcedDate: varchar("announcedDate", { length: 10 }),
+  amountUsd: decimal("amountUsd", { precision: 18, scale: 2 }),
+  amountOriginal: varchar("amountOriginal", { length: 64 }),
+  valuation: varchar("valuation", { length: 255 }),
+  leadInvestors: varchar("leadInvestors", { length: 500 }),
+  participants: varchar("participants", { length: 500 }),
+  pharmaOrNon: varchar("pharmaOrNon", { length: 16 }),
+  sliceTags: varchar("sliceTags", { length: 255 }),
+  source: varchar("source", { length: 64 }),
+  externalId: varchar("externalId", { length: 500 }),
+  snapshotDate: varchar("snapshotDate", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FundingEvent = typeof fundingEvents.$inferSelect;
