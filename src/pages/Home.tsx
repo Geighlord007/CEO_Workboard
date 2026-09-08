@@ -19,6 +19,8 @@ import { HeatmapCard } from "@/components/dash/HeatmapCard";
 import { AiAssistant } from "@/components/dash/AiAssistant";
 import { RisksCard } from "@/components/dash/RisksCard";
 import { PipelineCard } from "@/components/dash/PipelineCard";
+import { OppPipelineCard } from "@/components/dash/OppPipelineCard";
+import { FollowupsCard } from "@/components/dash/FollowupsCard";
 import { LinksCard } from "@/components/dash/LinksCard";
 import { MobileDock } from "@/components/dash/MobileDock";
 import { InstallPwa } from "@/components/InstallPwa";
@@ -103,8 +105,9 @@ export default function Home() {
       offwork: <OffworkCard />,
       heatmap: <HeatmapCard />,
       risks: <RisksCard compact={compact} />,
-      pipeline: <PipelineCard relType="client" />,
+      pipeline: <OppPipelineCard />,
       suppliers: <PipelineCard relType="supplier" />,
+      followups: <FollowupsCard />,
       links: <LinksCard compact={compact} />,
     };
     return (

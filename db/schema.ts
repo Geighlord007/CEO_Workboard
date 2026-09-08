@@ -558,3 +558,20 @@ export const fundingEvents = mysqlTable("funding_events", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type FundingEvent = typeof fundingEvents.$inferSelect;
+
+/** 跟进记录实体类型：挂回四张业务表（外键语义：entityType + entityId） */
+export const FOLLOWUP_ENTITY_TYPES = ["account", "supplier", "investor", "contact"] as const;
+export type FollowupEntityType = (typeof FOLLOWUP_ENTITY_TYPES)[number];
+
+/** 跟进记录：一条跟进 = 一行（对象 + 日期 + 事项 + 备注）；各模块跟进页/看板最近跟进/行抽屉都读它 */
+export const followups = mysqlTable("followups", {
+  id: serial("id").primaryKey(),
+  entityType: varchar("entityType", { length: 16 }).notNull(),
+  entityId: int("entityId").notNull(),
+  /** 跟进事项摘要，如「进入合同」「电话沟通报价」 */
+  title: varchar("title", { length: 200 }).notNull(),
+  followDate: varchar("followDate", { length: 10 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Followup = typeof followups.$inferSelect;

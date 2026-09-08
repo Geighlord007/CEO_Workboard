@@ -19,6 +19,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { FollowupSection } from "@/components/modules/FollowupsPage";
 import { STAGE_FLOW, STAGE_LABELS, STAGE_LABELS_EN, dual } from "@contracts/crm";
 import type { AppRouter } from "../../../api/router";
 
@@ -46,6 +47,9 @@ const CATEGORY_META: Record<string, { zh: string; en: string }> = {
   consumable: { zh: "耗材", en: "Consumable" },
   equipment: { zh: "设备", en: "Equipment" },
   cdmo: { zh: "CDMO", en: "CDMO" },
+  instrument_cro: { zh: "仪器CRO/CMO", en: "Instrument CRO/CMO" },
+  wetlab: { zh: "湿实验", en: "Wet lab" },
+  pilot: { zh: "小试工艺开发", en: "Pilot-scale process" },
   logistics: { zh: "物流", en: "Logistics" },
   other: { zh: "其他", en: "Other" },
 };
@@ -418,6 +422,16 @@ export function SuppliersTable({ isAdmin }: { isAdmin: boolean }) {
             </DrawerDescription>
           </DrawerHeader>
           {current && <SupplierDetail supplier={current} />}
+          {current && (
+            <div className="px-4 pb-6">
+              <FollowupSection
+                entityType="supplier"
+                entityId={current.id}
+                entityName={current.name}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
     </>

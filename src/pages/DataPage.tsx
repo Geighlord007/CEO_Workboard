@@ -135,6 +135,20 @@ export default function DataPage() {
           </span>
         </header>
 
+        {/* 说明：数据页与 CRM 是同一个数据库 */}
+        <div
+          style={{
+            marginBottom: 10,
+            padding: "6px 10px",
+            border: "1px dashed var(--n-border)",
+            borderRadius: 8,
+            fontSize: 11,
+            color: "var(--n-dim)",
+          }}
+        >
+          数据页 = 数据库原始视图：与 CRM 同一批表、实时双向同步；在这里改的字段，CRM 各表同样生效（反之亦然）。
+        </div>
+
         {/* 表清单 */}
         <nav style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
           {(tables.data ?? []).map((t) => (

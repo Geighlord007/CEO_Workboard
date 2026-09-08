@@ -19,7 +19,7 @@ src/components/
   crm/ dash/  既有 CRM 组件与看板卡片；ui/ = shadcn 基础组件
 ```
 
-数据表要点：运营表 `accounts / contacts / suppliers / investors / opportunities`；情报表 `company_library / funding_events`（公司档案+融资事件，界面一体化：公司行为主、融资时间线内嵌）。
+数据表要点：运营表 `accounts / contacts / suppliers / investors / opportunities`；跟进表 `followups`（entityType+entityId 挂回四张运营表，各模块跟进子页/行抽屉/看板最近跟进共用）；情报表 `company_library / funding_events`（公司档案+融资事件，界面一体化：公司行为主、融资时间线内嵌）。
 
 要改数据模型 → 先读 `db/schema.ts`；要加/改接口 → 看 `api/*Router.ts`；阶段/角色/外联状态标签只在 `contracts/crm.ts` 一处改（中英双语都在那里）。
 

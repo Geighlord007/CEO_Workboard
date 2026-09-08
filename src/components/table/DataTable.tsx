@@ -101,6 +101,8 @@ export interface DataTableProps<T> {
   onRefresh?: () => void;
   initialSort?: { key: string; dir: "asc" | "desc" };
   pageSizeOptions?: number[];
+  /** 表体最大高度：表格自带纵横滚动条，常驻视口内（不用滑到页面底） */
+  maxHeight?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -158,6 +160,7 @@ export function DataTable<T>({
   onRefresh,
   initialSort,
   pageSizeOptions = [25, 50, 100, 500],
+  maxHeight = "calc(100dvh - 250px)",
 }: DataTableProps<T>) {
   const data = React.useMemo(() => rows ?? [], [rows]);
 
@@ -181,6 +184,34 @@ export function DataTable<T>({
   const [density, setDensity] = React.useState<"comfortable" | "compact">("comfortable");
   const [pageSize, setPageSize] = React.useState(50);
 
+  /* ---------- 列宽（表头拖拽，持久化） ---------- */
+  const [widths, setWidths] = React.useState<Record<string, number>>(() => {
+    try {
+      const raw = localStorage.getItem(`wtc.table.${storageKey}`);
+      if (raw) {
+        const saved = JSON.parse(raw) as { widths?: Record<string, number> };
+        if (saved.widths) return saved.widths;
+      }
+    } catch { /* ignore */ }
+    return {};
+  });
+
+  const startResize = (e: React.MouseEvent, key: string, start: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const move = (ev: MouseEvent) => {
+      const next = Math.max(60, Math.round(start + ev.clientX - startX));
+      setWidths((prev) => ({ ...prev, [key]: next }));
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem(`wtc.table.${storageKey}`);
@@ -194,9 +225,12 @@ export function DataTable<T>({
 
   React.useEffect(() => {
     try {
-      localStorage.setItem(`wtc.table.${storageKey}`, JSON.stringify({ cols: colState, density, pageSize }));
+      localStorage.setItem(
+        `wtc.table.${storageKey}`,
+        JSON.stringify({ cols: colState, density, pageSize, widths }),
+      );
     } catch { /* ignore */ }
-  }, [storageKey, colState, density, pageSize]);
+  }, [storageKey, colState, density, pageSize, widths]);
 
   const orderedCols = React.useMemo(() => {
     const byKey = new Map(columns.map((c) => [c.key, c]));
@@ -226,7 +260,14 @@ export function DataTable<T>({
       const col = columns.find((c) => c.key === key);
       if (!col) continue;
       if (f.kind === "enum" && f.values.length) {
-        out = out.filter((r) => f.values.includes(str(col.value(r))));
+        out = out.filter((r) => {
+          const raw = str(col.value(r));
+          if (col.type === "tags") {
+            const parts = raw.split(",").map((s) => s.trim());
+            return f.values.some((v) => parts.includes(v));
+          }
+          return f.values.includes(raw);
+        });
       } else if (f.kind === "text" && f.q.trim()) {
         const needle = f.q.trim().toLowerCase();
         out = out.filter((r) => str(col.value(r)).toLowerCase().includes(needle));
@@ -355,7 +396,7 @@ export function DataTable<T>({
               {filterable.map((col) => (
                 <div key={col.key} className="space-y-1.5">
                   <div className="text-xs font-medium opacity-70">{headerText(col)}</div>
-                  {col.type === "enum" ? (
+                  {col.type === "enum" || (col.type === "tags" && col.options) ? (
                     <div className="flex max-h-40 flex-wrap gap-1 overflow-auto">
                       {(col.options ?? []).map((o) => {
                         const cur = filters[col.key];
@@ -580,8 +621,9 @@ export function DataTable<T>({
         </div>
       )}
 
-      {/* 表格 */}
+      {/* 表格（内层滚动容器：横/竖滚动条常驻视口内，表头吸顶） */}
       <div className="rounded-lg border">
+        <div className="overflow-auto" style={{ maxHeight, minHeight: 200 }}>
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             <TableRow>
@@ -602,11 +644,12 @@ export function DataTable<T>({
               )}
               {visibleCols.map((col) => {
                 const active = sort?.key === col.key;
+                const w = widths[col.key] ?? (typeof col.width === "number" ? col.width : undefined);
                 return (
                   <TableHead
                     key={col.key}
-                    className={cn(headPad, "whitespace-nowrap text-xs", col.align === "right" && "text-right")}
-                    style={{ width: col.width }}
+                    className={cn(headPad, "relative whitespace-nowrap text-xs", col.align === "right" && "text-right")}
+                    style={{ width: w }}
                     title={col.en}
                   >
                     {col.noSort ? (
@@ -625,6 +668,14 @@ export function DataTable<T>({
                         )}
                       </button>
                     )}
+                    <span
+                      role="separator"
+                      aria-orientation="vertical"
+                      title="拖拽调整列宽"
+                      className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-primary/40"
+                      onMouseDown={(e) => startResize(e, col.key, w ?? 120)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </TableHead>
                 );
               })}
@@ -763,6 +814,7 @@ export function DataTable<T>({
               })}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* 分页 */}

@@ -20,6 +20,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { FollowupSection } from "@/components/modules/FollowupsPage";
 import { Badge } from "@/components/ui/badge";
 import {
   REL_TYPE_META,
@@ -427,6 +428,16 @@ export function CustomersTable({ isAdmin }: { isAdmin: boolean }) {
             </DrawerDescription>
           </DrawerHeader>
           {current && <AccountDetail account={current} />}
+          {current && (
+            <div className="px-4 pb-6">
+              <FollowupSection
+                entityType="account"
+                entityId={current.id}
+                entityName={current.name}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
     </>

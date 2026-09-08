@@ -28,6 +28,8 @@ import {
   ACCOUNT_RELATIONSHIP_TYPES,
   companyLibrary,
   fundingEvents,
+  followups,
+  FOLLOWUP_ENTITY_TYPES,
 } from "@db/schema";
 import { REL_TYPES, isArchivedStage, type RelationshipType } from "@contracts/crm";
 import {
@@ -951,5 +953,59 @@ export const crmRouter = createRouter({
     funding: authedQuery.query(() =>
       getDb().select().from(fundingEvents).orderBy(desc(fundingEvents.announcedDate)),
     ),
+  }),
+
+  /** 跟进记录：entityType+entityId 挂回 accounts/suppliers/investors/contacts 四张表 */
+  followup: createRouter({
+    /** 全部跟进，按日期倒序（各模块跟进页/看板最近跟进共用） */
+    list: authedQuery.query(() =>
+      getDb().select().from(followups).orderBy(desc(followups.followDate), desc(followups.id)),
+    ),
+
+    create: adminWrite
+      .input(
+        z.object({
+          entityType: z.enum(FOLLOWUP_ENTITY_TYPES),
+          entityId: z.number().int().positive(),
+          title: z.string().trim().min(1).max(200),
+          followDate: d,
+          note: z.string().max(2000).nullish(),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const [res] = await getDb().insert(followups).values({
+          entityType: input.entityType,
+          entityId: input.entityId,
+          title: input.title,
+          followDate: input.followDate,
+          note: input.note ?? null,
+        });
+        return { id: Number(res.insertId) };
+      }),
+
+    update: adminWrite
+      .input(
+        z.object({
+          id: z.number().int().positive(),
+          patch: z.object({
+            title: z.string().trim().min(1).max(200).optional(),
+            followDate: d.optional(),
+            note: z.string().max(2000).nullish(),
+          }),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const set: Partial<typeof followups.$inferInsert> = {};
+        if (input.patch.title !== undefined) set.title = input.patch.title;
+        if (input.patch.followDate !== undefined) set.followDate = input.patch.followDate;
+        if (input.patch.note !== undefined) set.note = input.patch.note ?? null;
+        await getDb().update(followups).set(set).where(eq(followups.id, input.id));
+        return { ok: true };
+      }),
+
+    delete: adminWrite.input(idInput).mutation(async ({ input }) => {
+      await getDb().delete(followups).where(eq(followups.id, input.id));
+      return { ok: true };
+    }),
   }),
 });

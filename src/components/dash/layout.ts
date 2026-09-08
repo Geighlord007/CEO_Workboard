@@ -16,6 +16,7 @@ export const CARD_ORDER = [
   "risks",
   "pipeline",
   "suppliers",
+  "followups",
   "links",
 ] as const;
 
@@ -35,8 +36,9 @@ export const CARD_DEFS: Record<
   offwork: { title: "近 14 天收工时间", def: { w: 3, h: 3 }, minW: 2, minH: 2 },
   heatmap: { title: "产出打卡热力图 · 12 周", def: { w: 12, h: 2 }, minW: 4, minH: 2 },
   risks: { title: "风险与阻塞", def: { w: 4, h: 2 }, minW: 3, minH: 2 },
-  pipeline: { title: "客户推进", def: { w: 4, h: 3 }, minW: 3, minH: 2 },
+  pipeline: { title: "客户推进 · 商机", def: { w: 4, h: 3 }, minW: 3, minH: 2 },
   suppliers: { title: "供应商推进", def: { w: 4, h: 3 }, minW: 3, minH: 2 },
+  followups: { title: "最近跟进", def: { w: 4, h: 3 }, minW: 3, minH: 2 },
   links: { title: "快捷入口", def: { w: 4, h: 2 }, minW: 2, minH: 2 },
 };
 

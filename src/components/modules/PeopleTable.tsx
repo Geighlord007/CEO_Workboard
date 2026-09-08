@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/providers/trpc";
 import { DataTable, type Column, type ColumnOption } from "@/components/table/DataTable";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { FollowupSection } from "@/components/modules/FollowupsPage";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONTACT_ROLE_META, OUTREACH_STAGE_META, dual } from "@contracts/crm";
@@ -234,10 +235,23 @@ export function PeopleTable({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
+  /** 方向标签筛选项：把 tags 拆成单个标签去重（含「候选池」标记），按出现次数排序 */
+  const tagOptions: ColumnOption[] = React.useMemo(() => {
+    const count = new Map<string, number>();
+    for (const r of rows) {
+      for (const p of (r.tags ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
+        count.set(p, (count.get(p) ?? 0) + 1);
+      }
+    }
+    return [...count.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([value]) => ({ value, zh: value }));
+  }, [rows]);
+
   const columns: Column<PeopleRow>[] = [
     {
       key: "tags", zh: "方向标签", en: "Direction tags", type: "tags", width: 180,
-      editable: true, searchable: true,
+      editable: true, searchable: true, filterable: true, options: tagOptions,
       value: (r) => r.tags,
     },
     {
@@ -261,7 +275,7 @@ export function PeopleTable({ isAdmin }: { isAdmin: boolean }) {
     },
     {
       key: "affiliation", zh: "机构", en: "Organization", type: "text", width: 160,
-      editable: true, searchable: true,
+      editable: true, searchable: true, filterable: true,
       value: (r) => orgOf(r),
     },
     {
@@ -383,6 +397,16 @@ export function PeopleTable({ isAdmin }: { isAdmin: boolean }) {
             </DrawerDescription>
           </DrawerHeader>
           {opened && <PeopleDetail person={opened} org={orgOf(opened)} />}
+          {opened && (
+            <div className="px-4 pb-6">
+              <FollowupSection
+                entityType="contact"
+                entityId={opened.id}
+                entityName={opened.name}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
     </>

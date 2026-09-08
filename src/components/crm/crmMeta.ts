@@ -157,6 +157,9 @@ export const SUPPLIER_CATEGORY_LABEL: Record<string, string> = {
   consumable: "耗材",
   equipment: "设备",
   cdmo: "CDMO",
+  instrument_cro: "仪器CRO/CMO",
+  wetlab: "湿实验",
+  pilot: "小试工艺开发",
   logistics: "物流",
   other: "其他",
 };

@@ -3,13 +3,9 @@ import { Link } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { ReportPage } from "@/components/crm/ReportPage";
-import { CustomersPage } from "@/components/crm/CustomersPage";
-import { PipelinePage } from "@/components/crm/PipelinePage";
-import { QueuePage } from "@/components/crm/QueuePage";
 import { SamplesPage } from "@/components/crm/SamplesPage";
-import { SuppliersPage } from "@/components/crm/SuppliersPage";
-import { RelationshipsPage } from "@/components/crm/RelationshipsPage";
 import { CrmAiBar } from "@/components/crm/CrmAiBar";
+import { FollowupsPage } from "@/components/modules/FollowupsPage";
 import { CustomersTable } from "@/components/modules/CustomersTable";
 import { OpportunitiesTable } from "@/components/modules/OpportunitiesTable";
 import { SuppliersTable } from "@/components/modules/SuppliersTable";
@@ -42,9 +38,9 @@ function DotLogo({ size = 18 }: { size?: number }) {
 
 type ModuleKey = "business" | "procurement" | "funding" | "people" | "intel" | "report";
 type SubKey =
-  | "customersTable" | "oppsTable" | "queue" | "samples" | "customersCard" | "pipeline"
-  | "suppliersTable" | "suppliersManage"
-  | "investorsTable" | "fundingPush"
+  | "customersTable" | "oppsTable" | "followupsBiz" | "samples"
+  | "suppliersTable" | "followupsSup"
+  | "investorsTable" | "followupsInv"
   | "peopleTable"
   | "companies" | "fundingEvents"
   | "report";
@@ -58,24 +54,22 @@ const MODULES: Module[] = [
     subs: [
       { key: "customersTable", label: "客户/合作方", el: (a) => <CustomersTable isAdmin={a} /> },
       { key: "oppsTable", label: "商机", el: (a) => <OpportunitiesTable isAdmin={a} /> },
-      { key: "queue", label: "跟进", el: (a) => <QueuePage isAdmin={a} /> },
+      { key: "followupsBiz", label: "跟进", el: (a) => <FollowupsPage types={["account"]} isAdmin={a} /> },
       { key: "samples", label: "样品", el: (a) => <SamplesPage isAdmin={a} /> },
-      { key: "customersCard", label: "客户卡", el: (a) => <CustomersPage isAdmin={a} /> },
-      { key: "pipeline", label: "商机管道", el: (a) => <PipelinePage isAdmin={a} /> },
     ],
   },
   {
     key: "procurement", label: "采购", en: "Procurement",
     subs: [
       { key: "suppliersTable", label: "供应商", el: (a) => <SuppliersTable isAdmin={a} /> },
-      { key: "suppliersManage", label: "供应商管理", el: (a) => <SuppliersPage isAdmin={a} /> },
+      { key: "followupsSup", label: "跟进", el: (a) => <FollowupsPage types={["supplier"]} isAdmin={a} /> },
     ],
   },
   {
     key: "funding", label: "融资", en: "Funding",
     subs: [
       { key: "investorsTable", label: "投资人/基金", el: (a) => <InvestorsTable isAdmin={a} /> },
-      { key: "fundingPush", label: "融资推进", el: (a) => <RelationshipsPage isAdmin={a} /> },
+      { key: "followupsInv", label: "跟进", el: (a) => <FollowupsPage types={["investor"]} isAdmin={a} /> },
     ],
   },
   {

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/providers/trpc";
 import { DataTable, type Column, type ColumnOption } from "@/components/table/DataTable";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { FollowupSection } from "@/components/modules/FollowupsPage";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STAGE_FLOW, STAGE_LABELS, STAGE_LABELS_EN, dual, stageIndex } from "@contracts/crm";
@@ -395,6 +396,16 @@ export function InvestorsTable({ isAdmin }: { isAdmin: boolean }) {
             </DrawerDescription>
           </DrawerHeader>
           {opened && <InvestorDetail investor={opened} />}
+          {opened && (
+            <div className="px-4 pb-6">
+              <FollowupSection
+                entityType="investor"
+                entityId={opened.id}
+                entityName={opened.name}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
     </>
