@@ -394,6 +394,8 @@ export const investors = mysqlTable("investors", {
   name: varchar("name", { length: 255 }).notNull(),
   /** 机构/基金名 */
   firm: varchar("firm", { length: 255 }),
+  /** 融资轮次标签（每轮独立，如 seed-2025 / seed-2026） */
+  round: varchar("round", { length: 32 }),
   /** stage=当前轮次推进状态；旧表无状态记录的行导入为 to_contact（不冒充已接触） */
   stage: mysqlEnum("stage", INVESTOR_STAGES).notNull().default("contacted"),
   contactName: varchar("contactName", { length: 120 }),
@@ -478,6 +480,8 @@ export const companyLibrary = mysqlTable("company_library", {
   foundedYear: varchar("foundedYear", { length: 8 }),
   employeesBucket: varchar("employeesBucket", { length: 64 }),
   totalFundingUsd: decimal("totalFundingUsd", { precision: 18, scale: 2 }),
+  /** 融资轮次数（由 funding_events 汇总的冗余列，便于列表排序筛选） */
+  roundCount: int("roundCount"),
   lastFundingDate: varchar("lastFundingDate", { length: 10 }),
   lastFundingType: varchar("lastFundingType", { length: 64 }),
   ipoStatus: varchar("ipoStatus", { length: 64 }),
@@ -502,6 +506,8 @@ export type CompanyLibrary = typeof companyLibrary.$inferSelect;
 /** 融资事件库：逐轮融资事件（金额/估值/投资方），按公司查时间线、按投资方搜赛道、定价参照 */
 export const fundingEvents = mysqlTable("funding_events", {
   id: serial("id").primaryKey(),
+  /** 关联公司库（主表+子表合并形态） */
+  companyId: int("companyId"),
   companyName: varchar("companyName", { length: 255 }).notNull(),
   companyCbUrl: varchar("companyCbUrl", { length: 500 }),
   roundType: varchar("roundType", { length: 64 }),
