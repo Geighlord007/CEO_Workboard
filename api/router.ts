@@ -8,6 +8,7 @@ import { riskRouter, dealRouter } from "./riskRouter";
 import { activityRouter } from "./activityRouter";
 import { reportRouter } from "./reportRouter";
 import { crmRouter } from "./crmRouter";
+import { dataRouter } from "./dataRouter";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
@@ -23,6 +24,7 @@ export const appRouter = createRouter({
   ai: aiRouter,
   report: reportRouter,
   crm: crmRouter,
+  data: dataRouter,
 });
 
 export type AppRouter = typeof appRouter;

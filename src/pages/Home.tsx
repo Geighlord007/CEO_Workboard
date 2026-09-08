@@ -124,6 +124,11 @@ export default function Home() {
           <span className="nlabel">每周任务控制台</span>
           <span className="nlabel" style={{ color: "var(--n-faint)" }}>{weekRange}</span>
           <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {user.role === "admin" && (
+              <Link to="/data" className="nbtn" style={{ textDecoration: "none" }} title="浏览/安全编辑业务表数据">
+                数据
+              </Link>
+            )}
             <Link to="/crm" className="nbtn" style={{ textDecoration: "none" }} title="打开 CRM 关系管理">
               CRM
             </Link>
