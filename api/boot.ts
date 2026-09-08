@@ -73,6 +73,11 @@ app.use("/api/trpc/*", async (c) => {
     createContext,
   });
 });
+
+// Google Sheets 双向同步（Apps Script → 本服务，Bearer 令牌鉴权）
+const { registerSyncApi } = await import("./sync");
+registerSyncApi(app);
+
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;

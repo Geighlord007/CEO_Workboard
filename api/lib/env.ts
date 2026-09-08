@@ -43,4 +43,7 @@ export const env = {
     apiKey: process.env.LLM_API_KEY ?? "",
     model: process.env.LLM_MODEL ?? "",
   },
+
+  /** Google Sheets 双向同步专用令牌（Apps Script 用 Bearer 调 /api/sync/*） */
+  syncToken: process.env.SYNC_TOKEN ?? "",
 };
